@@ -6,35 +6,85 @@
 #include <math.h>
 #include <QPainter>
 
+#include <QSettings>
 
-Muxer::Muxer(QObject *parent)
+#include <QCoreApplication>
+
+Muxer::Muxer(bool verbose, QObject *parent)
 	: QObject(parent)
 	, m_jpegServer(0)
 	, m_cols(-1)
 	, m_rows(-1)
+	, m_verbose(verbose)
 {
 	m_jpegServer = new JpegServer();
 	m_jpegServer->setProvider(this, SIGNAL(imageReady(QImage*)));
 	
-	if (!m_jpegServer->listen(QHostAddress::Any,LISTEN_PORT)) 
+	QSettings settings("muxer.ini",QSettings::IniFormat);
+	
+	// Load the frame size (the "small" frame - the final frame size is computed automatically)
+	QString size = settings.value("frame-size","640x480").toString();
+	QStringList part = size.split("x");
+	m_frameSize = QSize(part[0].toInt(),part[1].toInt());
+	
+	if(verbose)
+		qDebug() << "Muxer: Frame size: "<<m_frameSize.width()<<"x"<<m_frameSize.height();
+	
+	
+	// Setup the server-side of the muxer
+	int listenPort = settings.value("listen-port",8088).toInt();
+	
+	if(verbose)
+		qDebug() << "Muxer: Attempting to listen on port"<<listenPort;
+	
+	if (!m_jpegServer->listen(QHostAddress::Any,listenPort)) 
 	{
-		qDebug() << "JpegServer could not start: "<<m_jpegServer->errorString();
+		qDebug() << "JpegServer could not start on port"<<listenPort<<": "<<m_jpegServer->errorString();
+		_exit(2);
+		return;
 	}
 	
+	int numCameras = settings.value("num-cams",0).toInt();
 	
-	QList<int> ports;
-//	ports << 8082 << 8089 << 8095 << 8093 << 8081 << 8094 << 8083 << 8084 << 8091 << 8090 << 8092 << 8087 << 8096 << 8099 << 8085 << 8086;
-	ports << 8081 << 8082 << 8083 << 8084;
+	// Load the defaults for use in the cameras section below
+	QString mainHost = settings.value("host","localhost").toString();
+	int     mainPort = settings.value("port",80).toInt();
+	QString mainPath = settings.value("path","/").toString();
 	
-	m_frameSize = QSize(640,480);
-	//320,240);
-	
-	// Setup all the threads and create the labels to view the images
-	foreach(int port, ports)
+	if(numCameras == 0 &&
+		(! settings.value("host").isNull() ||
+		 ! settings.value("port").isNull() ||
+		 ! settings.value("path").isNull()))
 	{
+		numCameras = 1;
+		// since the user defined a "main" host/port or path, then
+		// add a single camera using those values, since the 
+		// load loop below defaults to the main* values read above
+	}
+	
+	if(verbose)
+		qDebug() << "Muxer: Using default host"<<mainHost<<", port"<<mainPort<<", path"<<mainPath;
+	
+	if(verbose)
+		qDebug() << "Muxer: Going to read"<<numCameras<<"cameras";
+	
+	for(int i=0; i<numCameras;i++)
+	{
+		// Setup all the threads 
+		QString group = QString("cam%1").arg(i);
+		
+		QString hostKey = QString("%1/host").arg(group);
+		QString portKey = QString("%1/port").arg(group);
+		QString pathKey = QString("%1/path").arg(group);
+		
+		QString host = settings.value(hostKey,mainHost).toString();
+		int     port = settings.value(portKey,mainPort).toInt();
+		QString path = settings.value(pathKey,mainPath).toString();
+		
 		MjpegClient * client = new MjpegClient();
-		client->connectTo("localhost",port);
+		client->connectTo(host,port,path);
 			
+		client->setAutoReconnect(true);
 		client->setAutoResize(m_frameSize);
 		client->start();
 		
@@ -43,10 +93,19 @@ Muxer::Muxer(QObject *parent)
 		m_wasChanged << false;
 		
 		connect(client, SIGNAL(newImage(QImage)), this, SLOT(newImage(QImage)));
+		
+		if(verbose)
+			qDebug() << "Muxer: Setup camera "<<i<<" using host"<<host<<", port"<<port<<", path"<<path;
 	}
 	
 	// Attempt to find an optimum window size to view the cameras in a nice symetric arragmenet
 	int numItems = m_images.size();
+	
+	if(!numItems)
+	{
+		qDebug() << "No cameras listed in muxer.ini, exiting.";
+		_exit(3);
+	}
 	
 	double sq = sqrt(numItems);
 	if(((int)sq) != sq)
@@ -74,10 +133,22 @@ Muxer::Muxer(QObject *parent)
 		applySize((int)sq,(int)sq);
 	}
 	
+	if(verbose)
+	{
+		QSize size = m_muxedImage.size();
+		qDebug() << "Muxer: Final image size is"<<size.width()<<"x"<<size.height();
+	}
 	
+	// Setup the frame generation timer 
 	connect(&m_updateTimer, SIGNAL(timeout()), this, SLOT(updateFrames()));
-	m_updateTimer.setInterval(1000/2);
+	
+	int fps = settings.value("fps",2).toInt();
+	
+	m_updateTimer.setInterval(1000/fps);
 	m_updateTimer.start();
+	
+	if(verbose)
+		qDebug() << "Muxer: Running at"<<fps<<" frames per second";
 }
 
 Muxer::~Muxer()
@@ -118,6 +189,8 @@ void Muxer::newImage(QImage image)
 		m_images[index] = image;
 		m_wasChanged[index] = true;
 //		qDebug() << "newImage(): Received image for thread index"<<index;
+		if(m_verbose)
+			qDebug() << "Muxer: Received image from camera # "<<index;
 	}
 }
 
@@ -136,7 +209,7 @@ void Muxer::updateFrames()
 			QImage image = m_images.at(i);
 			double frac = (double)i / (double)m_cols;
 			int row = (int)frac;
-			int col = (frac - row) * m_cols;
+			int col = (int)((frac - row) * m_cols);
 			
 			int x = col * m_frameSize.width();
 			int y = row * m_frameSize.height();
@@ -152,6 +225,10 @@ void Muxer::updateFrames()
 	painter.end();
 	
 	if(changed)
+	{
+		if(m_verbose)
+			qDebug() << "Muxer: Transmitted new frame to clients";
 		emit imageReady(&m_muxedImage);
+	}
 }
 

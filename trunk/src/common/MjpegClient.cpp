@@ -11,6 +11,7 @@ MjpegClient::MjpegClient(QObject *parent)
 	, m_firstBlock(true)
 	, m_blockSize(0)
 	, m_dataBlock("")
+	, m_autoReconnect(true)
 	
 {
 #ifdef MJPEG_TEST
@@ -26,14 +27,24 @@ MjpegClient::~MjpegClient()
   
 bool MjpegClient::connectTo(const QString& host, int port, QString url)
 {
+	m_host = host;
+	m_port = port;
+	m_url = url;
+	
 	if(m_socket)
+	{
 		m_socket->abort();
+		delete m_socket;
+		m_socket = 0;
+	}
 		
 	m_socket = new QTcpSocket(this);
-	connect(m_socket, SIGNAL(readyRead()), this, SLOT(dataReady()));
+	connect(m_socket, SIGNAL(readyRead()),    this, SLOT(dataReady()));
+	connect(m_socket, SIGNAL(disconnected()), this, SLOT(lostConnection()));
 	connect(m_socket, SIGNAL(disconnected()), this, SIGNAL(socketDisconnected()));
-	connect(m_socket, SIGNAL(connected()), this, SIGNAL(socketConnected()));
+	connect(m_socket, SIGNAL(connected()),    this, SIGNAL(socketConnected()));
 	connect(m_socket, SIGNAL(error(QAbstractSocket::SocketError)), this, SIGNAL(socketError(QAbstractSocket::SocketError)));
+	connect(m_socket, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(lostConnection()));
 	
 	m_blockSize = 0;
 	m_socket->connectToHost(host,port);
@@ -53,6 +64,18 @@ void MjpegClient::log(const QString& str)
 	qDebug() << "MjpegClient::log(): "<<str;
 // 	if(m_log)
 // 		m_log->log(str);
+}
+
+void MjpegClient::lostConnection()
+{
+	if(m_autoReconnect)
+		QTimer::singleShot(1000,this,SLOT(reconnect()));
+}
+
+void MjpegClient::reconnect()
+{
+	log(QString("Attempting to reconnect to http://%1:%2%3").arg(m_host).arg(m_port).arg(m_url));
+	connectTo(m_host,m_port,m_url);
 }
 
 void MjpegClient::dataReady()
