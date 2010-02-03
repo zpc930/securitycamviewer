@@ -10,7 +10,7 @@
 
 #include <QCoreApplication>
 
-Muxer::Muxer(bool verbose, QObject *parent)
+Muxer::Muxer(QString configFile, bool verbose, QObject *parent)
 	: QObject(parent)
 	, m_jpegServer(0)
 	, m_cols(-1)
@@ -20,7 +20,10 @@ Muxer::Muxer(bool verbose, QObject *parent)
 	m_jpegServer = new JpegServer();
 	m_jpegServer->setProvider(this, SIGNAL(imageReady(QImage*)));
 	
-	QSettings settings("muxer.ini",QSettings::IniFormat);
+	QSettings settings(configFile,QSettings::IniFormat);
+	
+	if(verbose)
+		qDebug() << "Muxer: Reading settings from "<<configFile;
 	
 	// Load the frame size (the "small" frame - the final frame size is computed automatically)
 	QString size = settings.value("frame-size","640x480").toString();

@@ -4,8 +4,8 @@ TARGET = securitycam-muxer
 
 CONFIG += debug
 
-INCLUDEPATH += . ../common
-DEPENDPATH  += . ../common
+INCLUDEPATH += . ../common 
+DEPENDPATH  += . ../common 
 
 MOC_DIR     = .build
 OBJECTS_DIR = .build
@@ -15,9 +15,11 @@ UI_DIR      = .build
 
 HEADERS       = ../common/MjpegClient.h \
 		../common/JpegServer.h \
+		../common/getopt/getopt.h \
 		Muxer.h 
 SOURCES       = ../common/MjpegClient.cpp \
 		../common/JpegServer.cpp \
+		../common/getopt/getopt.cpp \
 		Muxer.cpp \
 		main.cpp
 QT           += network
