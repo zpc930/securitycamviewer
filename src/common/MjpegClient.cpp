@@ -177,7 +177,7 @@ void MjpegClient::processBlock()
 					{
 					
 						QImage frame = QImage::fromData(block);
-						if(!m_autoResize.isNull())
+						if(!m_autoResize.isNull() && m_autoResize != frame.size())
 							frame = frame.scaled(m_autoResize);
 						emit newImage(frame);
 						
