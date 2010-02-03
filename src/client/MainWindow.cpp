@@ -14,9 +14,10 @@ MainWindow::MainWindow(QWidget *parent)
 	
 	// This setup code is specific to my setup - need to generalize eventually
 	QList<int> ports;
-	ports << 8082 << 8089 << 8095 << 8093 << 8081 << 8094 << 8083 << 8084 << 8091 << 8090 << 8092 << 8087 << 8096 << 8099 << 8085 << 8086;
+	//ports << 8082 << 8089 << 8095 << 8093 << 8081 << 8094 << 8083 << 8084 << 8091 << 8090 << 8092 << 8087 << 8096 << 8099 << 8085 << 8086;
+	ports << 8088;
 	
-	QSize sameSize(320,240);
+	QSize sameSize(1280,960); //(320,240);
 	
 	// Setup all the threads and create the labels to view the images
 	foreach(int port, ports)
@@ -32,7 +33,7 @@ MainWindow::MainWindow(QWidget *parent)
 // 			client->connectTo("10.10.9.41",80,"/axis-cgi/mjpg/video.cgi?camera=1");
 // 		}
 // 		else
-			client->connectTo("cameras",port);
+			client->connectTo("localhost",port);
 			
 		client->setAutoResize(sameSize);
 		client->start();

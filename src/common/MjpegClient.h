@@ -28,6 +28,9 @@ public:
 	QSize autoResize() { return m_autoResize; }
 	void setAutoResize(QSize size) { m_autoResize = size; }
 	
+	bool autoReconnect() { return m_autoReconnect; }
+	void setAutoReconnect(bool flag) { m_autoReconnect = flag; }
+	
 signals:
 	void socketDisconnected();
 	void socketError(QAbstractSocket::SocketError);
@@ -38,6 +41,8 @@ signals:
 private slots:
 	void dataReady();
 	void processBlock();
+	void lostConnection();
+	void reconnect();
 
 private:
 	void log(const QString&);
@@ -50,6 +55,11 @@ private:
 	QByteArray m_dataBlock;
 	
 	QSize m_autoResize;
+	bool m_autoReconnect;
+	
+	QString m_host;
+	int m_port;
+	QString m_url;
 	
 #ifdef MJPEG_TEST
 	QLabel *m_label;

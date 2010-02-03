@@ -15,7 +15,7 @@ class Muxer : public QObject
 {
 	Q_OBJECT
 public:
-	Muxer(QObject *parent =0);
+	Muxer(bool verbose = false, QObject *parent =0);
 	~Muxer();
 
 signals:
@@ -42,7 +42,8 @@ private:
 	QSize m_frameSize;
 	
 	QList<bool> m_wasChanged;
-
+	
+	bool m_verbose;
 };
 
 #endif // Muxer_H
