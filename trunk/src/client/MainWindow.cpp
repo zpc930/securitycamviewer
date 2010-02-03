@@ -8,14 +8,16 @@
 #include <QSettings>
 #include <QMessageBox>
 
-MainWindow::MainWindow(QWidget *parent)
+MainWindow::MainWindow(QString configFile, bool verbose, QWidget *parent)
 	: QWidget(parent)
 {
 	FlowLayout * layout = new FlowLayout(this,0,0,0);
 	
-	bool verbose = false;
+	if(verbose)
+		qDebug() << "Viewer: Reading settings from "<<configFile;
 	
-	QSettings settings("viewer.ini",QSettings::IniFormat);
+	
+	QSettings settings(configFile,QSettings::IniFormat);
 	
 	QString title = settings.value("window-title","Camera Viewer").toString();
 	setWindowTitle(title);
