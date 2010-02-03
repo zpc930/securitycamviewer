@@ -26,13 +26,14 @@ Muxer::Muxer(QObject *parent)
 //	ports << 8082 << 8089 << 8095 << 8093 << 8081 << 8094 << 8083 << 8084 << 8091 << 8090 << 8092 << 8087 << 8096 << 8099 << 8085 << 8086;
 	ports << 8081 << 8082 << 8083 << 8084;
 	
-	m_frameSize = QSize(320,240);
+	m_frameSize = QSize(640,480);
+	//320,240);
 	
 	// Setup all the threads and create the labels to view the images
 	foreach(int port, ports)
 	{
 		MjpegClient * client = new MjpegClient();
-		client->connectTo("cameras",port);
+		client->connectTo("localhost",port);
 			
 		client->setAutoResize(m_frameSize);
 		client->start();
@@ -116,7 +117,7 @@ void Muxer::newImage(QImage image)
 		int index = m_threads.indexOf(client);
 		m_images[index] = image;
 		m_wasChanged[index] = true;
-		//qDebug() << "newImage(): Received image for thread index"<<index;
+		qDebug() << "newImage(): Received image for thread index"<<index;
 	}
 }
 
@@ -139,7 +140,7 @@ void Muxer::updateFrames()
 			
 			int x = col * m_frameSize.width();
 			int y = row * m_frameSize.height();
-// 			qDebug() << "updateFrames(): Painted image index "<<i<<" at row"<<row<<", col"<<col<<", coords "<<x<<"x"<<y;
+ 			qDebug() << "updateFrames(): Painted image index "<<i<<" at row"<<row<<", col"<<col<<", coords "<<x<<"x"<<y;
 			painter.drawImage(x,y, image);
 			
 			m_wasChanged[i] = false;
