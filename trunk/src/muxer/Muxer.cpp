@@ -117,7 +117,7 @@ void Muxer::newImage(QImage image)
 		int index = m_threads.indexOf(client);
 		m_images[index] = image;
 		m_wasChanged[index] = true;
-		qDebug() << "newImage(): Received image for thread index"<<index;
+//		qDebug() << "newImage(): Received image for thread index"<<index;
 	}
 }
 
@@ -140,7 +140,7 @@ void Muxer::updateFrames()
 			
 			int x = col * m_frameSize.width();
 			int y = row * m_frameSize.height();
- 			qDebug() << "updateFrames(): Painted image index "<<i<<" at row"<<row<<", col"<<col<<", coords "<<x<<"x"<<y;
+// 			qDebug() << "updateFrames(): Painted image index "<<i<<" at row"<<row<<", col"<<col<<", coords "<<x<<"x"<<y;
 			painter.drawImage(x,y, image);
 			
 			m_wasChanged[i] = false;
