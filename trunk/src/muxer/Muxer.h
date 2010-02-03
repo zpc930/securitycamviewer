@@ -15,7 +15,7 @@ class Muxer : public QObject
 {
 	Q_OBJECT
 public:
-	Muxer(bool verbose = false, QObject *parent =0);
+	Muxer(QString configFile="muxer.ini", bool verbose = false, QObject *parent =0);
 	~Muxer();
 
 signals:

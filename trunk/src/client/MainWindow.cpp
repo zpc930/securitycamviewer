@@ -36,11 +36,6 @@ MainWindow::MainWindow(QWidget *parent)
 		qDebug() << "Viewer: Frame size: "<<sameSize.width()<<"x"<<sameSize.height();
 	
 	
-	// This setup code is specific to my setup - need to generalize eventually
-	QList<int> ports;
-	//ports << 8082 << 8089 << 8095 << 8093 << 8081 << 8094 << 8083 << 8084 << 8091 << 8090 << 8092 << 8087 << 8096 << 8099 << 8085 << 8086;
-	ports << 8088;
-	
 	//QSize sameSize(1280,960); //(320,240);
 	
 	// Setup all the threads and create the labels to view the images
