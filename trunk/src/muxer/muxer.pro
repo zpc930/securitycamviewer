@@ -21,3 +21,6 @@ SOURCES       = ../common/MjpegClient.cpp \
 		Muxer.cpp \
 		main.cpp
 QT           += network
+
+# Needed for centos 5.3
+LIBS += -L/opt/fontconfig-2.4.2/lib -lfontconfig
