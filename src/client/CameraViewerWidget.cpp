@@ -2,7 +2,7 @@
 #include "MjpegClient.h"
 
 #include <QDate>
-#include <QDir>
+#include <QDirIterator>
 #include <QPainter>
 #include <QMenu>
 
@@ -114,9 +114,25 @@ void CameraViewerWidget::loadPlaybackDate(const QString & date)
 	path.replace("%Y",parts[0]);
 	path.replace("%m",parts[1]);
 	path.replace("%d",parts[2]);
-	QDir dir(path);
+
+	path = "S:\\Security Camera Recordings\\cam1\\2010\\01\\31";
+	qDebug() << "loadPlaybackDate("<<date<<"): Reading from path"<<path<<" (hardocded!)";
+	//QDir dir(path);
 	
-	m_files = dir.entryInfoList(QStringList() << "*.jpg" << "*.JPG", QDir::NoFilter, QDir::Time);
+	//m_files = dir.entryInfoList(QStringList() << "*.jpg" << "*.JPG", QDir::NoFilter, QDir::Time);
+
+	m_files.clear();
+
+	QDirIterator it(path, QDirIterator::Subdirectories);
+	while (it.hasNext())
+	{
+		qDebug() << it.next();
+		m_files << it.fileInfo();
+	}
+
+
+
+	qDebug() << "Found "<<m_files.size()<<" files.";
 	m_currentFrame = 0;
 	
 	if(isPlaybackMode())
@@ -126,13 +142,17 @@ void CameraViewerWidget::loadPlaybackDate(const QString & date)
 void CameraViewerWidget::setLiveMode()
 {
 	m_inPlaybackMode = false;
+	m_updateTimer.stop();
 	m_updateTimer.setInterval((int)(1000/m_liveFps));
+	m_updateTimer.start();
 }
 
 void CameraViewerWidget::setPlaybackMode()
 {
 	m_inPlaybackMode = true;
+	m_updateTimer.stop();
 	m_updateTimer.setInterval((int)(1000/m_playbackFps));
+	m_updateTimer.start();
 	
 	if(m_files.isEmpty())
 	{
