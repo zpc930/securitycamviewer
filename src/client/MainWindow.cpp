@@ -2,6 +2,7 @@
 
 #include "MjpegClient.h"
 #include "FlowLayout.h"
+#include "CameraViewerWidget.h"
 
 #include <math.h>
 
@@ -72,6 +73,11 @@ MainWindow::MainWindow(QString configFile, bool verbose, QWidget *parent)
 		return;
 	}
 	
+	int fps = settings.value("fps",2).toInt();
+	if(verbose)
+		qDebug() << "Viewer: Running at"<<fps<<" frames per second";
+		
+	
 	for(int i=0; i<numCameras;i++)
 	{
 		// Setup all the threads 
@@ -86,34 +92,31 @@ MainWindow::MainWindow(QString configFile, bool verbose, QWidget *parent)
 		QString path = settings.value(pathKey,mainPath).toString();
 		
 		
-		QLabel * label = new QLabel(this);
-		layout->addWidget(label);
-		m_labels << label;
+		CameraViewerWidget * viewer = new CameraViewerWidget(this);
 		
-		MjpegClient * client = new MjpegClient();
-		client->connectTo(host,port,path);
+		viewer->connectTo(host,port,path);
 			
-		client->setAutoResize(sameSize);
-		client->start();
+		viewer->setDesiredSize(sameSize);
+// 		client->start();
 		
-		m_threads    << client;
-		m_images     << QImage();
-		m_wasChanged << false;
+		viewer->setLiveFps(fps);
 		
-		connect(client, SIGNAL(newImage(QImage)), this, SLOT(newImage(QImage)));
+		layout->addWidget(viewer);
+		
+		//m_threads    << client;
+		//m_images     << QImage();
+		//m_wasChanged << false;
+		
+		//connect(client, SIGNAL(newImage(QImage)), this, SLOT(newImage(QImage)));
 		
 		if(verbose)
 			qDebug() << "Viewer: Setup camera "<<i<<" using host"<<host<<", port"<<port<<", path"<<path;
 	}
 	
-	connect(&m_updateTimer, SIGNAL(timeout()), this, SLOT(updateFrames()));
+	//connect(&m_updateTimer, SIGNAL(timeout()), this, SLOT(updateFrames()));
 	
-	int fps = settings.value("fps",2).toInt();
-	if(verbose)
-		qDebug() << "Viewer: Running at"<<fps<<" frames per second";
-		
-	m_updateTimer.setInterval(1000/fps);
-	m_updateTimer.start();
+// 	m_updateTimer.setInterval(1000/fps);
+// 	m_updateTimer.start();
 	
 	// Attempt to find an optimum window size to view the cameras in a nice symetric arragmenet
 	double sq = sqrt(numCameras);
@@ -146,14 +149,14 @@ MainWindow::MainWindow(QString configFile, bool verbose, QWidget *parent)
 
 MainWindow::~MainWindow()
 {
-	while(!m_threads.isEmpty())
-	{
-		MjpegClient * client = m_threads.takeFirst();
-		client->quit();
-		client->wait();
-		delete client;
-		client = 0;
-	}
+// 	while(!m_threads.isEmpty())
+// 	{
+// 		MjpegClient * client = m_threads.takeFirst();
+// 		client->quit();
+// 		client->wait();
+// 		delete client;
+// 		client = 0;
+// 	}
 }
 
 void MainWindow::applySize(int x, int y, QSize size)
@@ -164,35 +167,35 @@ void MainWindow::applySize(int x, int y, QSize size)
 }
 
 
-void MainWindow::newImage(QImage image)
-{
-	MjpegClient * client = dynamic_cast<MjpegClient*>(sender());
-	if(client)
-	{
-		int index = m_threads.indexOf(client);
-		m_images[index] = image;
-		m_wasChanged[index] = true;
-		//qDebug() << "newImage(): Received image for thread index"<<index;
-	}
-}
+// void MainWindow::newImage(QImage image)
+// {
+// 	MjpegClient * client = dynamic_cast<MjpegClient*>(sender());
+// 	if(client)
+// 	{
+// 		int index = m_threads.indexOf(client);
+// 		m_images[index] = image;
+// 		m_wasChanged[index] = true;
+// 		//qDebug() << "newImage(): Received image for thread index"<<index;
+// 	}
+// }
 
-void MainWindow::updateFrames()
-{
-	int length = m_images.size();
-	for(int i=0;i<length;i++)
-	{
-		if(i < m_labels.size())
-		{
-			bool flag = m_wasChanged.at(i);
-			if(flag)
-			{
-				QLabel * label = m_labels.at(i);
-				QImage   image = m_images.at(i);
-				if(label)
-					label->setPixmap(QPixmap::fromImage(image));
-				
-				m_wasChanged[i] = false;
-			}
-		}
-	}
-}
+// void MainWindow::updateFrames()
+// {
+// 	int length = m_images.size();
+// 	for(int i=0;i<length;i++)
+// 	{
+// 		if(i < m_labels.size())
+// 		{
+// 			bool flag = m_wasChanged.at(i);
+// 			if(flag)
+// 			{
+// 				QLabel * label = m_labels.at(i);
+// 				QImage   image = m_images.at(i);
+// 				if(label)
+// 					label->setPixmap(QPixmap::fromImage(image));
+// 				
+// 				m_wasChanged[i] = false;
+// 			}
+// 		}
+// 	}
+// }
