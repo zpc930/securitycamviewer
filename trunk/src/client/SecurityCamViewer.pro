@@ -13,10 +13,12 @@ UI_DIR      = .build
 
 HEADERS       = ../common/MjpegClient.h \
 		../common/getopt/getopt.h \
+		CameraViewerWidget.h \
 		MainWindow.h \
 		FlowLayout.h
 SOURCES       = ../common/MjpegClient.cpp \
 		../common/getopt/getopt.cpp \
+		CameraViewerWidget.cpp \
 		MainWindow.cpp \
 		FlowLayout.cpp \
                 main.cpp

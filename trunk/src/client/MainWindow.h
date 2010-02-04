@@ -15,8 +15,8 @@ public:
 	~MainWindow();
 	
 private slots:
-	void newImage(QImage);
-	void updateFrames();
+/*	void newImage(QImage);
+	void updateFrames();*/
 	
 private:
 	void applySize(int x, int y, QSize imgSize);

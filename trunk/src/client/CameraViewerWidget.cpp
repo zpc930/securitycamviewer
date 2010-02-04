@@ -1,6 +1,11 @@
 #include "CameraViewerWidget.h"
 #include "MjpegClient.h"
 
+#include <QDate>
+#include <QDir>
+#include <QPainter>
+#include <QMenu>
+
 CameraViewerWidget::CameraViewerWidget(QWidget *parent)
 	: QWidget(parent)
 	, m_client(0)
@@ -18,6 +23,7 @@ CameraViewerWidget::CameraViewerWidget(QWidget *parent)
 	connect(this, SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(showCustomContextMenu(QPoint)));
 	
 	connect(&m_updateTimer, SIGNAL(timeout()), this, SLOT(updateImage()));
+	m_updateTimer.start();
 	setLiveMode(); // apply fps to update timer
 	
 	QDate date = QDate::currentDate();
@@ -38,9 +44,13 @@ CameraViewerWidget::~CameraViewerWidget()
 void CameraViewerWidget::setDesiredSize(QSize size)
 {
 	if(m_client)
-		m_client->setAutoResize(sameSize);
+		m_client->setAutoResize(size);
 	m_desiredSize = size;
-	setSizeHint(size);
+}
+
+QSize CameraViewerWidget::sizeHint() const
+{
+	return m_desiredSize;
 }
 	
 MjpegClient * CameraViewerWidget::connectTo(QString host, int port, QString path)
@@ -54,6 +64,12 @@ MjpegClient * CameraViewerWidget::connectTo(QString host, int port, QString path
 	
 	m_client = new MjpegClient();
 	m_client->connectTo(host,port,path);
+	m_client->setAutoResize(rect().size());
+	// TODO catch resize event and update autoresize accordingly
+	m_client->start();
+	
+	connect(m_client, SIGNAL(newImage(QImage)), this, SLOT(newImage(QImage)));
+	
 	return m_client;	
 }
 	
@@ -110,13 +126,13 @@ void CameraViewerWidget::loadPlaybackDate(const QString & date)
 void CameraViewerWidget::setLiveMode()
 {
 	m_inPlaybackMode = false;
-	m_updateTimer.setInterval(1000/m_liveFps);
+	m_updateTimer.setInterval((int)(1000/m_liveFps));
 }
 
 void CameraViewerWidget::setPlaybackMode()
 {
 	m_inPlaybackMode = true;
-	m_updateTimer.setInterval(1000/m_playbackFps);
+	m_updateTimer.setInterval((int)(1000/m_playbackFps));
 	
 	if(m_files.isEmpty())
 	{
@@ -127,7 +143,7 @@ void CameraViewerWidget::setPlaybackMode()
 }
 	
 	
-void CameraViewerWidget::paintEvent(QPaintEvent *event)
+void CameraViewerWidget::paintEvent(QPaintEvent */*event*/)
 {
 	QPainter painter(this);
 	painter.fillRect(rect(),Qt::black);

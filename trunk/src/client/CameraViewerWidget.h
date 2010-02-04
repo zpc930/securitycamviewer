@@ -4,43 +4,55 @@
 #include <QWidget>
 #include <QFileInfo>
 #include <QImage>
+#include <QTimer>
 
 class MjpegClient;
 
-public CameraViewerWidget : public QWidget
+class CameraViewerWidget : public QWidget
 {
 	Q_OBJECT
 public:
 	CameraViewerWidget(QWidget *parent=0);
 	~CameraViewerWidget();
 	
+	
+	// QWidget::
+	virtual QSize sizeHint () const;
+	
+	bool playbackEnabled() { return m_playbackEnabled; }
+	
+	QString dailyRecordingPath() { return m_dailyRecordingPath; }
+	
+	double playbackFps() { return m_playbackFps; }
+	
+	double liveFps() { return m_liveFps; }
+
+	bool isLiveMode() { return ! m_inPlaybackMode; }
+	bool isPlaybackMode() { return m_inPlaybackMode; }
+	QString currentPlaybackDate() { return m_currentPlaybackDate; }
+	int currentFrame() { return m_currentFrame; }
+	
+	
+public slots:
 	void setDesiredSize(QSize);
 	
 	MjpegClient * connectTo(QString host, int port=80, QString path="/");
 	
 	void setPlaybackEnabled(bool flag);
-	bool playbackEnabled() { return m_playbackEnabled; }
 	
 	void setDailyRecordingPath(const QString&);
-	QString dailyRecordingPath() { return m_dailyRecordingPath; }
 	
 	void setPlaybackFps(double);
-	double playbackFps() { return m_playbackFps; }
 	
 	void setLiveFps(double);
-	double liveFps() { return m_liveFps; }
 	
 	void setCurrentFrame(int);
-	int currentFrame() { return m_currentFrame; }
 	
 	// date should be in YYYY-MM-DD
 	void loadPlaybackDate(const QString & date);
-	QString currentPlaybackDate() { return m_currentPlaybackDate; }
 	
 	void setLiveMode();
 	void setPlaybackMode();
-	bool isLiveMode() { return ! m_inPlaybackMode; }
-	bool isPlaybackMode() { return m_inPlaybackMode; }
 	
 protected:
 	void paintEvent(QPaintEvent *event);
