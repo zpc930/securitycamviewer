@@ -59,6 +59,10 @@ void JpegServerThread::run()
 	
 	writeHeaders();
 	
+	m_writer.setDevice(m_socket);
+	m_writer.setFormat("jpg");
+	m_writer.setQuality(75);
+	
 	// enter event loop
 	exec();
 	
@@ -83,20 +87,20 @@ void JpegServerThread::imageReady(QImage *tmp)
 	
 	if(image.format() != QImage::Format_RGB32)
 		image = image.convertToFormat(QImage::Format_RGB32);
-		
 	
-	
-	m_socket->write("Content-type: image/jpeg\r\n\r\n");
-	
-	QImageWriter writer(m_socket, "jpg");
-	if(!writer.canWrite())
+	if(m_socket->state() == QAbstractSocket::ConnectedState)
 	{
-		qDebug() << "ImageWriter can't write!";
+		m_socket->write("Content-type: image/jpeg\r\n\r\n");
 	}
-	else
-	if(!writer.write(image))
+	
+// 	if(!writer.canWrite())
+// 	{
+// 		qDebug() << "ImageWriter can't write!";
+// 	}
+// 	else
+	if(!m_writer.write(image))
 	{
-		qDebug() << "ImageWriter reported error:"<<writer.errorString();
+		qDebug() << "ImageWriter reported error:"<<m_writer.errorString();
 		quit();
 	}
 	

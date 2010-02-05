@@ -5,11 +5,8 @@
 MjpegClient::MjpegClient(QObject *parent) 
 	: QThread(parent)
 	, m_socket(0)
-// 	, m_log(0)
-// 	, m_inst(0)
 	, m_boundary("")
 	, m_firstBlock(true)
-	, m_blockSize(0)
 	, m_dataBlock("")
 	, m_autoReconnect(true)
 	
@@ -27,6 +24,9 @@ MjpegClient::~MjpegClient()
   
 bool MjpegClient::connectTo(const QString& host, int port, QString url)
 {
+	if(url.isEmpty())
+		url = "/";
+		
 	m_host = host;
 	m_port = port;
 	m_url = url;
@@ -43,20 +43,20 @@ bool MjpegClient::connectTo(const QString& host, int port, QString url)
 	connect(m_socket, SIGNAL(disconnected()), this, SLOT(lostConnection()));
 	connect(m_socket, SIGNAL(disconnected()), this, SIGNAL(socketDisconnected()));
 	connect(m_socket, SIGNAL(connected()),    this, SIGNAL(socketConnected()));
+	connect(m_socket, SIGNAL(connected()),    this, SLOT(connectionReady()));
 	connect(m_socket, SIGNAL(error(QAbstractSocket::SocketError)), this, SIGNAL(socketError(QAbstractSocket::SocketError)));
 	connect(m_socket, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(lostConnection()));
 	
-	m_blockSize = 0;
 	m_socket->connectToHost(host,port);
 	
-	if(url.isEmpty())
-		url = "/";
-		
-	char data[256];
-	sprintf(data, "GET %s HTTP/1.0\r\n\r\n",qPrintable(url));
-	m_socket->write((const char*)&data,strlen((const char*)data));
-	
 	return true;
+}
+
+void MjpegClient::connectionReady()
+{
+	char data[256];
+	sprintf(data, "GET %s HTTP/1.0\r\n\r\n",qPrintable(m_url));
+	m_socket->write((const char*)&data,strlen((const char*)data));
 }
 
 void MjpegClient::log(const QString& str)
@@ -80,30 +80,17 @@ void MjpegClient::reconnect()
 
 void MjpegClient::dataReady()
 {
-	m_blockSize = m_socket->bytesAvailable();
-	
-	char * data = (char*)malloc(m_blockSize * sizeof(char));
-	if(data == NULL)
+	QByteArray bytes = m_socket->readAll();
+	if(bytes.size() > 0)
 	{
-		qDebug() << "Error allocating memory for incomming data - asked for "<<m_blockSize<<" bytes, got nothing, exiting.";
-		exit();
-		return;
-	}
-	
-	int bytesRead = m_socket->read(data,m_blockSize);
-	if(bytesRead > 0)
-	{
-		m_dataBlock.append(data,m_blockSize);
+		m_dataBlock.append(bytes);
 		processBlock();
 	}
 	
-	free(data);
-	data = 0;
-	
-	if(m_socket->bytesAvailable())
+/*	if(m_socket->bytesAvailable())
 	{
 		QTimer::singleShot(0, this, SLOT(dataReady()));
-	}
+	}*/
 }
 
 void MjpegClient::processBlock()
