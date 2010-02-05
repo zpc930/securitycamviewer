@@ -43,6 +43,7 @@ private slots:
 	void processBlock();
 	void lostConnection();
 	void reconnect();
+	void connectionReady();
 
 private:
 	void log(const QString&);
@@ -51,7 +52,6 @@ private:
 	QString m_boundary;
 	bool m_firstBlock;
 	
-	int m_blockSize;
 	QByteArray m_dataBlock;
 	
 	QSize m_autoResize;

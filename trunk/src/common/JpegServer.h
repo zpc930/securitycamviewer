@@ -4,6 +4,7 @@
 #include <QTcpServer>
 #include <QThread>
 #include <QTcpSocket>
+#include <QImageWriter>
 
 class JpegServer : public QTcpServer
 {
@@ -50,6 +51,7 @@ private:
 	QTcpSocket * m_socket;
 	
 	QByteArray m_boundary;
+	QImageWriter m_writer;
 	
 };
 
