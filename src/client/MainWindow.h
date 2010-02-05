@@ -19,14 +19,11 @@ private slots:
 	void updateFrames();*/
 	
 private:
-	void applySize(int x, int y, QSize imgSize);
+	void applySize(int x, int y);
+	int m_rows;
+	int m_cols;
+	QSize m_frameSize;
 	
-	QList<MjpegClient*> m_threads;
-	QList<QImage> m_images;
-	QList<QLabel*> m_labels;
-	QTimer m_updateTimer;
-	QList<bool> m_wasChanged;
-
 };
 
 #endif // MotionViewer_H

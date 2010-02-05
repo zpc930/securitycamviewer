@@ -31,6 +31,10 @@ public:
 	bool autoReconnect() { return m_autoReconnect; }
 	void setAutoReconnect(bool flag) { m_autoReconnect = flag; }
 	
+	QString host() { return m_host; }
+	int port() { return m_port; }
+	QString path() { return m_url; }
+	
 signals:
 	void socketDisconnected();
 	void socketError(QAbstractSocket::SocketError);
