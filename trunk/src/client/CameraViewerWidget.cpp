@@ -1,5 +1,6 @@
 #include "CameraViewerWidget.h"
 #include "MjpegClient.h"
+#include "PlaybackWidget.h"
 
 #include <QDate>
 #include <QDirIterator>
@@ -119,5 +120,10 @@ void CameraViewerWidget::showCustomContextMenu(const QPoint&pos)
 
 void CameraViewerWidget::showPlaybackDialog()
 {
-	qDebug() << "TO BE DONE";
+	//qDebug() << "TO BE DONE";
+	PlaybackWidget * w = new PlaybackWidget();
+	w->adjustSize();
+	w->setWindowTitle("Playback Test - Cam 2");
+	w->loadPlaybackDate(w->currentPlaybackDate());
+	w->show();
 }
