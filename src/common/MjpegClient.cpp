@@ -207,7 +207,7 @@ void MjpegClient::processBlock()
 		
 	}
 	
-	qDebug() << "processBlock(): End of processing, m_dataBlock.size() remaining:"<<m_dataBlock.size();
+	//qDebug() << "processBlock(): End of processing, m_dataBlock.size() remaining:"<<m_dataBlock.size();
 }
 
 void MjpegClient::exit()

@@ -3,6 +3,7 @@
 
 #include <QObject>
 #include <QTimer>
+#include <QTime>
 #include <QImage>
 #include <QSize>
 
@@ -33,6 +34,11 @@ private:
 	
 	QList<MjpegClient*> m_threads;
 	QList<QImage> m_images;
+	
+	QList<int> m_counts;
+	QList<int> m_durations;
+	QList<QTime> m_time;
+	
 	QTimer m_updateTimer;
 	
 	QImage m_muxedImage;
