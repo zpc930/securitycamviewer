@@ -39,11 +39,11 @@ bool MjpegClient::connectTo(const QString& host, int port, QString url)
 	}
 		
 	m_socket = new QTcpSocket(this);
-	connect(m_socket, SIGNAL(readyRead()),    this, SLOT(dataReady()));
-	connect(m_socket, SIGNAL(disconnected()), this, SLOT(lostConnection()));
+	connect(m_socket, SIGNAL(readyRead()),    this,   SLOT(dataReady()));
+	connect(m_socket, SIGNAL(disconnected()), this,   SLOT(lostConnection()));
 	connect(m_socket, SIGNAL(disconnected()), this, SIGNAL(socketDisconnected()));
 	connect(m_socket, SIGNAL(connected()),    this, SIGNAL(socketConnected()));
-	connect(m_socket, SIGNAL(connected()),    this, SLOT(connectionReady()));
+	connect(m_socket, SIGNAL(connected()),    this,   SLOT(connectionReady()));
 	connect(m_socket, SIGNAL(error(QAbstractSocket::SocketError)), this, SIGNAL(socketError(QAbstractSocket::SocketError)));
 	connect(m_socket, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(lostConnection()));
 	
@@ -62,8 +62,6 @@ void MjpegClient::connectionReady()
 void MjpegClient::log(const QString& str)
 {
 	qDebug() << "MjpegClient::log(): "<<str;
-// 	if(m_log)
-// 		m_log->log(str);
 }
 
 void MjpegClient::lostConnection()
@@ -87,10 +85,10 @@ void MjpegClient::dataReady()
 		processBlock();
 	}
 	
-/*	if(m_socket->bytesAvailable())
+	if(m_socket && m_socket->bytesAvailable())
 	{
 		QTimer::singleShot(0, this, SLOT(dataReady()));
-	}*/
+	}
 }
 
 void MjpegClient::processBlock()
@@ -106,8 +104,8 @@ void MjpegClient::processBlock()
 		else
 		if(m_dataBlock.contains("content-type:"))
 		{
-			// allow for buggy servers (some IP cameras - trendnet I'm looking at you!) sometimes dont use proper
-			// case in their headers.
+			// allow for buggy servers (some IP cameras - trendnet, I'm looking at you!) 
+			// sometimes dont use proper case in their headers.
 			ctypeString = "content-type:";
 		}
 		
@@ -175,14 +173,13 @@ void MjpegClient::processBlock()
 				
 				if(headerLength)
 				{
-					QString header = block.left(headerLength);
+					//QString header = block.left(headerLength);
 					
 					block.remove(0,headerLength);
 					
 					// Block should now be just data
 					//qDebug() << "processBlock(): block length:"<<block.length()<<", headerLength:"<<headerLength<<", header:"<<header;
 					
-					// TODO: do something with contents block - like write to a file, emit signal, whatever.
 					if(block.length() > 0)
 					{
 					
@@ -196,22 +193,6 @@ void MjpegClient::processBlock()
 						m_label->setPixmap(pix);
 						m_label->resize(pix.width(),pix.height());
 						#endif
-						
-						
-					
-// 						static QString filename = "test.jpg";
-// 						QFile file(filename);
-// 						
-// 						if(!file.open(QIODevice::WriteOnly))
-// 						{
-// 							qDebug() << "processBlock(): Unable to open "<<filename<<" for writing";
-// 						}
-// 						else
-// 						{
-// 							qint64 bytes = file.write(block);
-// 							file.close();
-// 							qDebug() << "processBlock(): Wrote"<<bytes<<" to "<<filename;
-// 						}
 					}
 				}
 
@@ -223,8 +204,7 @@ void MjpegClient::processBlock()
 		
 	}
 	
-// 	qDebug() << "processBlock(): End of processing, m_dataBlock.size() remaining:"<<m_dataBlock.size();
-	
+//	qDebug() << "processBlock(): End of processing, m_dataBlock.size() remaining:"<<m_dataBlock.size();
 }
 
 void MjpegClient::exit()
@@ -234,7 +214,8 @@ void MjpegClient::exit()
 		m_socket->abort();
 		m_socket->disconnectFromHost();
 		//m_socket->waitForDisconnected();
-		delete m_socket;
+		m_socket->deleteLater();
+		//delete m_socket;
 		m_socket = 0;
 	}
 }
