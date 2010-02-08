@@ -13,6 +13,9 @@ class JpegServer : public QTcpServer
 public:
 	JpegServer(QObject *parent = 0);
 	
+	void setAdaptiveWriteEnabled(bool flag) { m_adaptiveWriteEnabled = flag; }
+	bool adaptiveWriteEnabled() { return m_adaptiveWriteEnabled; }
+	
 	void setProvider(QObject *provider, const char * signalName);
 	
 // 	QString myAddress();
@@ -23,6 +26,7 @@ protected:
 private:
 	QObject * m_imageProvider;
 	const char * m_signalName;
+	bool m_adaptiveWriteEnabled;
 
 };
 
@@ -33,7 +37,7 @@ class JpegServerThread : public QThread
     Q_OBJECT
 
 public:
-	JpegServerThread(int socketDescriptor, QObject *parent = 0);
+	JpegServerThread(int socketDescriptor, bool adaptiveWriteEnabled, QObject *parent = 0);
 	~JpegServerThread();
 	
 	void run();
@@ -52,6 +56,7 @@ private:
 	
 	QByteArray m_boundary;
 	QImageWriter m_writer;
+	bool m_adaptiveWriteEnabled;
 	
 };
 

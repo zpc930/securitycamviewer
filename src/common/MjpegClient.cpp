@@ -190,16 +190,14 @@ void MjpegClient::processBlock()
 					{
 					
 						QImage frame = QImage::fromData(block);
-						if(!m_autoResize.isNull() && m_autoResize != frame.size())
-							frame = frame.scaled(m_autoResize);
+						
 						if(!frame.isNull())
 						{
+							if(!m_autoResize.isNull() && m_autoResize != frame.size())
+								frame = frame.scaled(m_autoResize);
+						
 							emit newImage(frame);
-							
-							// This actually kinda works to combat the lag over a .12Mbps uplink (since auto-reconnect
-							// just re-opens the socket), but there has to be a better way...
-							//exit();
-						}
+						}	
 						
 						#ifdef MJPEG_TEST
 						QPixmap pix = QPixmap::fromImage(frame);
