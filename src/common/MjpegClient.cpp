@@ -1,5 +1,7 @@
 #include "MjpegClient.h"
 
+#include <QCoreApplication>
+
 #include <QTimer>
 
 MjpegClient::MjpegClient(QObject *parent) 
@@ -48,6 +50,7 @@ bool MjpegClient::connectTo(const QString& host, int port, QString url)
 	connect(m_socket, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(lostConnection()));
 	
 	m_socket->connectToHost(host,port);
+	m_socket->setReadBufferSize(1024 * 1024);
 	
 	return true;
 }
@@ -78,20 +81,20 @@ void MjpegClient::reconnect()
 
 void MjpegClient::dataReady()
 {
-	while(m_socket && m_socket->bytesAvailable())
-	{
+// 	while(m_socket && m_socket->bytesAvailable())
+// 	{
 		QByteArray bytes = m_socket->readAll();
 		if(bytes.size() > 0)
 		{
 			m_dataBlock.append(bytes);
 			processBlock();
 		}
-	}
-	
-// 	if(m_socket && m_socket->bytesAvailable())
-// 	{
-// 		QTimer::singleShot(0, this, SLOT(dataReady()));
 // 	}
+	
+	if(m_socket && m_socket->bytesAvailable())
+	{
+		QTimer::singleShot(0, this, SLOT(dataReady()));
+	}
 }
 
 void MjpegClient::processBlock()
@@ -189,7 +192,14 @@ void MjpegClient::processBlock()
 						QImage frame = QImage::fromData(block);
 						if(!m_autoResize.isNull() && m_autoResize != frame.size())
 							frame = frame.scaled(m_autoResize);
-						emit newImage(frame);
+						if(!frame.isNull())
+						{
+							emit newImage(frame);
+							
+							// This actually kinda works to combat the lag over a .12Mbps uplink (since auto-reconnect
+							// just re-opens the socket), but there has to be a better way...
+							//exit();
+						}
 						
 						#ifdef MJPEG_TEST
 						QPixmap pix = QPixmap::fromImage(frame);
