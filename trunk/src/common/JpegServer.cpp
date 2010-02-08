@@ -13,14 +13,6 @@ void JpegServer::setProvider(QObject *provider, const char * signalName)
 	m_signalName    = signalName;
 }
 
-/*
-QString JpegServer::myAddress()
-{
-	QString ipAddress = AppSettings::myIpAddress();
-	
-	return QString("http://%1:%2/").arg(ipAddress).arg(serverPort());
-}*/
-
 void JpegServer::incomingConnection(int socketDescriptor)
 {
 	JpegServerThread *thread = new JpegServerThread(socketDescriptor);
@@ -61,7 +53,7 @@ void JpegServerThread::run()
 	
 	m_writer.setDevice(m_socket);
 	m_writer.setFormat("jpg");
-	m_writer.setQuality(75);
+	//m_writer.setQuality(80);
 	
 	// enter event loop
 	exec();
@@ -105,7 +97,8 @@ void JpegServerThread::imageReady(QImage *tmp)
 	}
 	
 	m_socket->write("--" BOUNDARY "\r\n");
-	
+	m_socket->flush();
+
 // 	qDebug() << "JpegServerThread: [END] Writing Frame#:"<<frameCounter;
 }
 
