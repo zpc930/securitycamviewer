@@ -78,17 +78,20 @@ void MjpegClient::reconnect()
 
 void MjpegClient::dataReady()
 {
-	QByteArray bytes = m_socket->readAll();
-	if(bytes.size() > 0)
+	while(m_socket && m_socket->bytesAvailable())
 	{
-		m_dataBlock.append(bytes);
-		processBlock();
+		QByteArray bytes = m_socket->readAll();
+		if(bytes.size() > 0)
+		{
+			m_dataBlock.append(bytes);
+			processBlock();
+		}
 	}
 	
-	if(m_socket && m_socket->bytesAvailable())
-	{
-		QTimer::singleShot(0, this, SLOT(dataReady()));
-	}
+// 	if(m_socket && m_socket->bytesAvailable())
+// 	{
+// 		QTimer::singleShot(0, this, SLOT(dataReady()));
+// 	}
 }
 
 void MjpegClient::processBlock()
@@ -146,8 +149,8 @@ void MjpegClient::processBlock()
 		// like the boundary definition, Server:, Connection:, etc.
 		int idx = m_dataBlock.indexOf(m_boundary);
 		
-		while(idx > 0)
-		{
+ 		while(idx > 0)
+ 		{
 			QByteArray block = m_dataBlock.left(idx);
 			
 			int blockAndBoundaryLength = idx + m_boundary.length();
@@ -156,7 +159,7 @@ void MjpegClient::processBlock()
 			
 			if(m_firstBlock)
 			{
-				QString string = block;
+				//QString string = block;
 				//qDebug() << "processBlock(): Discarding block since first block flag is true. Dump of block:\n"<<string;
 				m_firstBlock = false;
 			}
@@ -198,13 +201,13 @@ void MjpegClient::processBlock()
 
 			}
 			
-			// check for another boundary string in the data before exiting from processBlock()
-			idx = m_dataBlock.indexOf(m_boundary);
-		}
+// 			// check for another boundary string in the data before exiting from processBlock()
+ 			idx = m_dataBlock.indexOf(m_boundary);
+ 		}
 		
 	}
 	
-//	qDebug() << "processBlock(): End of processing, m_dataBlock.size() remaining:"<<m_dataBlock.size();
+	qDebug() << "processBlock(): End of processing, m_dataBlock.size() remaining:"<<m_dataBlock.size();
 }
 
 void MjpegClient::exit()
