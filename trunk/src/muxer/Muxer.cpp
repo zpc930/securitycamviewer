@@ -25,7 +25,7 @@ Muxer::Muxer(QString configFile, bool verbose, QObject *parent)
 	if(verbose)
 		qDebug() << "Muxer: Reading settings from "<<configFile;
 	
-	// Load the frame size (the "small" frame - the final frame size is computed automatically)
+	// Load the frame size (the "small" frame - the final image size is computed automatically)
 	QString size = settings.value("frame-size","640x480").toString();
 	QStringList part = size.split("x");
 	m_frameSize = QSize(part[0].toInt(),part[1].toInt());
@@ -94,6 +94,13 @@ Muxer::Muxer(QString configFile, bool verbose, QObject *parent)
 		m_threads    << client;
 		m_images     << QImage();
 		m_wasChanged << false;
+		
+		m_counts     << 0;
+		m_durations  << 0;
+		
+		QTime t;
+		t.start();
+		m_time       << t;
 		
 		connect(client, SIGNAL(newImage(QImage)), this, SLOT(newImage(QImage)));
 		
@@ -174,11 +181,13 @@ void Muxer::applySize(int x, int y)
 	m_rows = y;
 	int xpx = x * m_frameSize.width();
 	int ypx = y * m_frameSize.height();
-// 	resize(xpx + 1,ypx + 1);
+
 	m_muxedImage = QImage(xpx,ypx,QImage::Format_RGB32);
+	
 	QPainter painter(&m_muxedImage);
 	painter.fillRect(m_muxedImage.rect(), Qt::gray);
 	painter.end();
+	
 	emit imageReady(&m_muxedImage);
 }
 
@@ -192,8 +201,18 @@ void Muxer::newImage(QImage image)
 		m_images[index] = image;
 		m_wasChanged[index] = true;
 //		qDebug() << "newImage(): Received image for thread index"<<index;
+		
+		m_counts[index] ++;
+		
+		int time =  m_time[index].restart();
+		m_durations[index] += time;
+		
 		if(m_verbose)
-			qDebug() << "Muxer: Received image from camera # "<<index;
+		{
+			qDebug() << "Muxer: Received image from camera # "<<index << " at "<<(((double)time)/1000.0)<<"sec, avg duration:"<<(m_durations[index] / m_counts[index]);
+		}
+			
+			
 	}
 }
 
