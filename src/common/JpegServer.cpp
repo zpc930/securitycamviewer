@@ -77,27 +77,34 @@ void JpegServerThread::imageReady(QImage *tmp)
  	frameCounter++;
 //  	qDebug() << "JpegServerThread: [START] Writing Frame#:"<<frameCounter;
 	
-	if(image.format() != QImage::Format_RGB32)
-		image = image.convertToFormat(QImage::Format_RGB32);
-	
-	if(m_socket->state() == QAbstractSocket::ConnectedState)
+	if(m_socket->bytesToWrite() > 0)
 	{
-		m_socket->write("Content-type: image/jpeg\r\n\r\n");
+		qDebug() << "JpegServerThread::imageReady():"<<m_socket->bytesToWrite()<<"bytes pending write on socket, not sending image"<<frameCounter;
 	}
-	
-// 	if(!writer.canWrite())
-// 	{
-// 		qDebug() << "ImageWriter can't write!";
-// 	}
-// 	else
-	if(!m_writer.write(image))
+	else
 	{
-		qDebug() << "ImageWriter reported error:"<<m_writer.errorString();
-		quit();
+		if(image.format() != QImage::Format_RGB32)
+			image = image.convertToFormat(QImage::Format_RGB32);
+		
+		if(m_socket->state() == QAbstractSocket::ConnectedState)
+		{
+			m_socket->write("Content-type: image/jpeg\r\n\r\n");
+		}
+		
+	// 	if(!writer.canWrite())
+	// 	{
+	// 		qDebug() << "ImageWriter can't write!";
+	// 	}
+	// 	else
+		if(!m_writer.write(image))
+		{
+			qDebug() << "ImageWriter reported error:"<<m_writer.errorString();
+			quit();
+		}
+		
+		m_socket->write("--" BOUNDARY "\r\n");
+		//m_socket->flush();
 	}
-	
-	m_socket->write("--" BOUNDARY "\r\n");
-	m_socket->flush();
 
 // 	qDebug() << "JpegServerThread: [END] Writing Frame#:"<<frameCounter;
 }
