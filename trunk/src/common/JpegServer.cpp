@@ -4,6 +4,9 @@
 
 JpegServer::JpegServer(QObject *parent)
 	: QTcpServer(parent)
+	, m_imageProvider(0)
+	, m_signalName(0)
+	, m_adaptiveWriteEnabled(true)
 {
 }
 	
@@ -15,7 +18,7 @@ void JpegServer::setProvider(QObject *provider, const char * signalName)
 
 void JpegServer::incomingConnection(int socketDescriptor)
 {
-	JpegServerThread *thread = new JpegServerThread(socketDescriptor);
+	JpegServerThread *thread = new JpegServerThread(socketDescriptor, m_adaptiveWriteEnabled);
 	connect(thread, SIGNAL(finished()), thread, SLOT(deleteLater()));
 	connect(m_imageProvider, m_signalName, thread, SLOT(imageReady(QImage*)), Qt::QueuedConnection);
 	thread->start();
@@ -27,15 +30,17 @@ void JpegServer::incomingConnection(int socketDescriptor)
 #include <QImageWriter>
 #include <QImage>
 
-JpegServerThread::JpegServerThread(int socketDescriptor, QObject *parent)
+JpegServerThread::JpegServerThread(int socketDescriptor, bool adaptiveWriteEnabled, QObject *parent)
     : QThread(parent)
     , m_socketDescriptor(socketDescriptor)
+    , m_adaptiveWriteEnabled(adaptiveWriteEnabled)
 {
 	
 }
 
 JpegServerThread::~JpegServerThread()
 {
+	m_socket->abort();
 	delete m_socket;
 }
 
@@ -77,7 +82,7 @@ void JpegServerThread::imageReady(QImage *tmp)
  	frameCounter++;
 //  	qDebug() << "JpegServerThread: [START] Writing Frame#:"<<frameCounter;
 	
-	if(m_socket->bytesToWrite() > 0)
+	if(m_adaptiveWriteEnabled && m_socket->bytesToWrite() > 0)
 	{
 		qDebug() << "JpegServerThread::imageReady():"<<m_socket->bytesToWrite()<<"bytes pending write on socket, not sending image"<<frameCounter;
 	}
@@ -91,11 +96,6 @@ void JpegServerThread::imageReady(QImage *tmp)
 			m_socket->write("Content-type: image/jpeg\r\n\r\n");
 		}
 		
-	// 	if(!writer.canWrite())
-	// 	{
-	// 		qDebug() << "ImageWriter can't write!";
-	// 	}
-	// 	else
 		if(!m_writer.write(image))
 		{
 			qDebug() << "ImageWriter reported error:"<<m_writer.errorString();
@@ -103,9 +103,7 @@ void JpegServerThread::imageReady(QImage *tmp)
 		}
 		
 		m_socket->write("--" BOUNDARY "\r\n");
-		//m_socket->flush();
 	}
 
-// 	qDebug() << "JpegServerThread: [END] Writing Frame#:"<<frameCounter;
 }
 
