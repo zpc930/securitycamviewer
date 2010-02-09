@@ -1,11 +1,12 @@
 #include "CameraViewerWidget.h"
 #include "MjpegClient.h"
-#include "PlaybackWidget.h"
+#include "PlaybackDialog.h"
 
 #include <QDate>
 #include <QDirIterator>
 #include <QPainter>
 #include <QMenu>
+#include <QDebug>
 
 CameraViewerWidget::CameraViewerWidget(QWidget *parent)
 	: QWidget(parent)
@@ -103,27 +104,40 @@ void CameraViewerWidget::newImage(QImage image)
 
 void CameraViewerWidget::showCustomContextMenu(const QPoint&pos)
 {
-
-	QMenu contextMenu(tr("Context menu"), this);
-	
-	QAction *today = new QAction(tr("View Recorded Footage"),this);
-	connect(today, SIGNAL(triggered()), this, SLOT(showPlaybackDialog()));
-	
-// 	QAction *live = new QAction(tr("View Live Feed"),this);
-// 	connect(live, SIGNAL(triggered()), this, SLOT(setLiveMode()));
-	
-	contextMenu.addAction(today);
-// 	contextMenu.addAction(live);
-	
-	contextMenu.exec(mapToGlobal(pos));
+	if(playbackEnabled())
+	{
+		QMenu contextMenu(tr("Context menu"), this);
+		
+		QAction *today = new QAction(tr("View Recorded Footage"),this);
+		connect(today, SIGNAL(triggered()), this, SLOT(showPlaybackDialog()));
+		
+	// 	QAction *live = new QAction(tr("View Live Feed"),this);
+	// 	connect(live, SIGNAL(triggered()), this, SLOT(setLiveMode()));
+		
+		contextMenu.addAction(today);
+	// 	contextMenu.addAction(live);
+		
+		contextMenu.exec(mapToGlobal(pos));
+	}
 }
 
 void CameraViewerWidget::showPlaybackDialog()
 {
-	//qDebug() << "TO BE DONE";
-	PlaybackWidget * w = new PlaybackWidget();
-	w->adjustSize();
-	w->setWindowTitle("Playback Test - Cam 2");
-	w->loadPlaybackDate(w->currentPlaybackDate());
-	w->show();
+	if(playbackEnabled())
+	{
+// 		PlaybackWidget * w = new PlaybackWidget();
+// 		w->adjustSize();
+// 		w->setWindowTitle("Playback Test - Cam 2");
+// 		w->loadPlaybackDate(w->currentPlaybackDate());
+// 		w->show();
+		PlaybackDialog * d = new PlaybackDialog();
+		connect(d, SIGNAL(finished(int)), d, SLOT(deleteLater()));
+		
+		//qDebug() << "CameraViewerWidget::showPlaybackDialog(): dailyRecordingPath():"<<dailyRecordingPath();
+		d->setDailyRecordingPath(dailyRecordingPath());
+		d->setPlaybackFps(playbackFps());
+		
+		d->adjustSize();
+		d->show();
+	}
 }
