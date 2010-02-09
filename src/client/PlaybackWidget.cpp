@@ -7,6 +7,9 @@
 #include <QPainter>
 #include <QMenu>
 #include <QDebug>
+#include <QProgressDialog>
+#include <QCoreApplication>
+#include <QMessageBox>
 
 PlaybackWidget::PlaybackWidget(QWidget *parent)
 	: QWidget(parent)
@@ -16,6 +19,7 @@ PlaybackWidget::PlaybackWidget(QWidget *parent)
 	, m_playbackFps(30)
 	, m_currentPlaybackDate("")
 	, m_status(Stopped)
+	, m_lockCurrentFrameChange(false)
 {
 	connect(&m_updateTimer, SIGNAL(timeout()), this, SLOT(updateImage()));
 	
@@ -51,10 +55,24 @@ void PlaybackWidget::setPlaybackFps(double d)
 	m_updateTimer.stop();
 	m_updateTimer.setInterval((int)(1000/m_playbackFps));
 	m_updateTimer.start();
+	
+// 	qDebug() << "PlaybackWidget::setPlaybackFps(): m_playbackFps:"<<m_playbackFps;
 }
 
 void PlaybackWidget::setCurrentFrame(int d)
 {
+	if(m_lockCurrentFrameChange)
+		return;
+	m_lockCurrentFrameChange = true;
+	
+	if(d >= m_files.size() || d<0)
+	{
+		qDebug() << "PlaybackWidget::setCurrentFrame():"<<d<<">"<<m_files.size()<<"|| d < 0, not changing frame.";
+		m_currentImage = QImage();
+		m_lockCurrentFrameChange = false;
+		return;
+	}
+	
 	m_currentFrame = d;
 	
 	QFileInfo info = m_files[m_currentFrame];
@@ -66,7 +84,11 @@ void PlaybackWidget::setCurrentFrame(int d)
 		resize(m_desiredSize);
 	}	
 	
+	emit currentFrameChanged(m_currentFrame);
+	
 	update();
+	
+	m_lockCurrentFrameChange = false;
 }
 
 bool PlaybackWidget_sortQFileInfoByModified(const QFileInfo &a, const QFileInfo &b)
@@ -77,40 +99,56 @@ bool PlaybackWidget_sortQFileInfoByModified(const QFileInfo &a, const QFileInfo 
 // date should be in YYYY-MM-DD
 void PlaybackWidget::loadPlaybackDate(const QString & date)
 {
+	QProgressDialog progress(QString(tr("Loading Video from %1...")).arg(date),tr("Stop Loading"),0,0,this);
+	progress.setWindowTitle(QString(tr("Loading %1")).arg(date));
+	progress.show();
+	// let the dialog become visible
+	QCoreApplication::processEvents();
+		
 	m_currentPlaybackDate = date;
 	
 	QStringList parts = date.split("-");
 	QString path = m_dailyRecordingPath;
-	
-	path = "/ha/cameras/motion/cam2/jpeg/%Y/%m/%d";
+// 	qDebug() << "loadPlaybackDate("<<date<<"): Original path from config: "<<path;
 	
 	path.replace("%Y",parts[0]);
 	path.replace("%m",parts[1]);
 	path.replace("%d",parts[2]);
-	//path = "/ha/cameras/motion/cam9/jpeg/2010/"; //02/05/";
-	//path = "S:\\Security Camera Recordings\\cam1\\2010\\01\\31";
-	qDebug() << "loadPlaybackDate("<<date<<"): Reading from path"<<path<<" (kinda hardocded!)";
-	//QDir dir(path);
-	
-	//m_files = dir.entryInfoList(QStringList() << "*.jpg" << "*.JPG", QDir::NoFilter, QDir::Time);
+// 	qDebug() << "loadPlaybackDate("<<date<<"): Reading from path"<<path;
 
 	m_files.clear();
 
 	QDirIterator it(path, QDirIterator::Subdirectories);
-	while (it.hasNext())
+	while (it.hasNext() && !progress.wasCanceled())
 	{
-		qDebug() << it.next();
+		it.next();
 		if(it.fileInfo().isFile())
 		{
 			m_files << it.fileInfo();
+			
+			// update the progress dialog
+			progress.setValue(m_files.size());
+			QCoreApplication::processEvents();
 		}
 	}
+	
+	progress.close();
 	
 	if(!m_files.isEmpty())
 		qSort(m_files.begin(),m_files.end(), PlaybackWidget_sortQFileInfoByModified);
 	
 	qDebug() << "Found "<<m_files.size()<<" files.";
-	m_currentFrame = 0;
+	
+	emit numFramesChanged(m_files.size()-1);
+	
+	setCurrentFrame(0);
+	
+	if(m_files.size() <= 0)
+	{
+		setStatus(Stopped);
+		QMessageBox::critical(this,tr("No Video Found"),QString(tr("Sorry, no video was found for %1.")).arg(date));
+		return;
+	}
 	
 	setStatus(Playing);
 }	
@@ -126,9 +164,9 @@ void PlaybackWidget::paintEvent(QPaintEvent */*event*/)
 		painter.drawImage(rect(),m_currentImage);
 		
 	}
-	painter.setPen(QPen(Qt::white,2));
-	painter.setBrush(Qt::black);
-	painter.drawText(5,15,QString("%3 - %1/%2").arg(m_currentFrame).arg(m_files.size()).arg(status() == Playing ? "PLAYING" : "PAUSED/STOPPED"));
+// 	painter.setPen(QPen(Qt::white,2));
+// 	painter.setBrush(Qt::black);
+// 	painter.drawText(5,15,QString("%3 - %1/%2").arg(m_currentFrame).arg(m_files.size()).arg(status() == Playing ? "PLAYING" : "PAUSED/STOPPED"));
 	
 }
 void PlaybackWidget::updateImage()
@@ -149,6 +187,10 @@ void PlaybackWidget::updateImage()
 
 void PlaybackWidget::setStatus(Status s)
 {
+// 	qDebug() << "PlaybackWidget::setStatus(): "<<s;
 	m_status = s;
+	if(s == Stopped)
+		setCurrentFrame(0);
+	emit statusChanged(s);
 	update();
 }

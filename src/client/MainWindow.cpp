@@ -106,6 +106,35 @@ MainWindow::MainWindow(QString configFile, bool verbose, QWidget *parent)
 	int row=0;
 	int col=0;
 	
+	QString recordingRoot = settings.value("recordings/root","").toString();
+	if(!recordingRoot.isEmpty() && recordingRoot.endsWith("/"))
+		recordingRoot = recordingRoot.left(recordingRoot.length()-1);
+		
+	int recordingFps = settings.value("recordings/fps",3).toInt();
+	
+	bool assumeThreadFromPort = settings.value("recordings/assume-thread-from-port",false).toBool();
+	QString recordingDaily = settings.value("recordings/daily-root","").toString();
+		
+	if(assumeThreadFromPort && recordingDaily.isEmpty())
+	{
+		qDebug()<<"Error in Config: Unable to assume thread from port correctly because [recordings] -> 'daily-root' is not set.";
+		assumeThreadFromPort = false;
+	}
+	
+	if(assumeThreadFromPort && recordingDaily.indexOf("%t") < 0)
+	{
+		qDebug()<<"Error in Config: Unable to assume thread from port correctly because [recordings] -> 'daily-root' does not contain the '%t' parameter in the path.";
+		assumeThreadFromPort = false;
+	}
+	
+	int recordingFirstPort = settings.value("recordings/first-port",-1).toInt();
+	if(assumeThreadFromPort && recordingFirstPort < 0)
+	{
+		qDebug()<<"Error in Config: Unable to assume thread from port correctly because [recordings] -> 'first-port' is not set.";
+		assumeThreadFromPort = false;
+	}
+	
+	
 	for(int i=0; i<numCameras;i++)
 	{
 		// Setup all the threads 
@@ -121,6 +150,42 @@ MainWindow::MainWindow(QString configFile, bool verbose, QWidget *parent)
 		
 		
 		CameraViewerWidget * viewer = new CameraViewerWidget(this);
+		
+		QString recPath = settings.value(QString("%1/rec-daily-root").arg(group),"").toString();
+		if(!recPath.isEmpty() || assumeThreadFromPort)
+		{
+			viewer->setPlaybackEnabled(true);
+			
+			if(!recordingRoot.isEmpty())
+			{
+				if(assumeThreadFromPort)
+				{
+					recPath = recordingDaily;
+					
+					int thread = port - recordingFirstPort + 1;
+					recPath.replace("%t",QString::number(thread));
+				}
+				
+				if(recPath.startsWith("/"))
+					recPath = recPath.right(recordingRoot.length()-1);
+				recPath = QString("%1/%2").arg(recordingRoot).arg(recPath);
+			}
+			
+			qDebug() << "Playback enabled for camera"<<group<<", recordings stored in:"<<recPath;
+			viewer->setDailyRecordingPath(recPath);
+			
+			QVariant playFps = settings.value(QString("%1/rec-fps").arg(group));
+			if(!playFps.isNull())
+			{
+				viewer->setPlaybackFps(playFps.toInt());
+			}
+			else
+			{
+				viewer->setPlaybackFps(recordingFps);
+			}
+		}
+		
+		
 		
 		viewer->connectTo(host,port,path);
 		viewer->setDesiredSize(m_frameSize);

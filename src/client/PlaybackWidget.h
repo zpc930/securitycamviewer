@@ -27,6 +27,8 @@ public:
 	QString currentPlaybackDate() { return m_currentPlaybackDate; }
 	int currentFrame() { return m_currentFrame; }
 	
+	int numFrames() { return m_files.size(); }
+	
 	typedef enum Status { Playing, Stopped, Paused };
 	Status status() { return m_status; }
 	void setStatus(Status);
@@ -42,6 +44,11 @@ public slots:
 	
 	// date should be in YYYY-MM-DD
 	void loadPlaybackDate(const QString & date);
+	
+signals:
+	void currentFrameChanged(int);
+	void numFramesChanged(int);
+	void statusChanged(PlaybackWidget::Status);
 	
 protected:
 	void paintEvent(QPaintEvent *event);
@@ -66,6 +73,9 @@ private:
 	QString m_currentPlaybackDate;
 	
 	Status m_status;
+	
+	// used to prevent loops in setCurrentFrame signals
+	bool m_lockCurrentFrameChange;
 	
 
 };
