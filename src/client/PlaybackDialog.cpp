@@ -11,29 +11,26 @@ PlaybackDialog::PlaybackDialog(QWidget *parent)
 	: QDialog(parent)
 	, ui(new Ui::PlaybackDialog)
 	, m_calendarChangeCount(0)
+	, m_lockStatusChange(false)
+	, m_statusFromButton(false)
 {
 	ui->setupUi(this);
 	
 	ui->playButton->setIcon(style()->standardIcon(QStyle::SP_MediaPause));
-	ui->stopButton->setIcon(style()->standardIcon(QStyle::SP_MediaStop));
 	
 	ui->playButton->setEnabled(true);
-	ui->stopButton->setEnabled(false);
 	
 	connect(ui->viewer, SIGNAL(currentFrameChanged(int)), ui->frameSlider, SLOT(setValue(int)));
 	connect(ui->viewer, SIGNAL(numFramesChanged(int)), this, SLOT(numFramesChanged(int)));
 	connect(ui->viewer, SIGNAL(statusChanged(PlaybackWidget::Status)), this, SLOT(statusChanged(PlaybackWidget::Status)));
 	
-	connect(ui->frameSlider, SIGNAL(valueChanged(int)), ui->viewer, SLOT(setCurrentFrame(int)));
-	
-	connect(ui->playButton, SIGNAL(clicked()), this, SLOT(playButtonClicked()));
-	connect(ui->stopButton, SIGNAL(clicked()), this, SLOT(stopButtonClicked()));
-	
-	connect(ui->fps, SIGNAL(valueChanged(int)), this, SLOT(setFps(int)));
-	
 	connect(ui->calendarWidget, SIGNAL(currentPageChanged(int,int)), this, SLOT(updateCalendarWidget(int,int)));
 	connect(ui->calendarWidget, SIGNAL(activated(const QDate&)), this, SLOT(loadDate(const QDate&)));
 	connect(ui->calendarWidget, SIGNAL(clicked(const QDate&)), this, SLOT(loadDate(const QDate&)));
+	
+	connect(ui->frameSlider, SIGNAL(valueChanged(int)), ui->viewer, SLOT(setCurrentFrame(int)));
+	connect(ui->playButton, SIGNAL(clicked()), this, SLOT(playButtonClicked()));
+	connect(ui->fps, SIGNAL(valueChanged(int)), this, SLOT(applyFpsValue(int)));
 	
 	setWindowTitle("Recorded Footage");
 }
@@ -138,15 +135,42 @@ void PlaybackDialog::updateCalendarWidget(int year, int month)
 
 void PlaybackDialog::setPlaybackFps(double d)
 {
-	ui->viewer->setPlaybackFps(d);
+	// this will trigger applyFpsValue(), below
 	ui->fps->setValue((int)d);
-	m_playbackFps = d;
 }
 
 
-void PlaybackDialog::setFps(int d)
+void PlaybackDialog::applyFpsValue(int d)
 {
-	ui->viewer->setPlaybackFps((double)d);
+// 	qDebug() << "PlaybackDialog::applyFpsValue(): d:"<<d;
+	 	
+	if(d == 0)
+		d = 1;
+		
+	if(d < 0)
+	{
+// 		qDebug() << "PlaybackDialog::applyFpsValue(): [BACKWARD] calling setPlaybackFps(d * -1) ="<<(d * -1);
+		if(ui->viewer->playDirection() != PlaybackWidget::PlayBackward)
+		{
+			ui->fps->setStyleSheet("background:yellow;color:black");
+			ui->viewer->setPlayDirection(PlaybackWidget::PlayBackward);
+		}
+		ui->viewer->setPlaybackFps(d * -1);
+	}
+	else
+	{
+// 		qDebug() << "PlaybackDialog::applyFpsValue():  [FORWARD] calling setPlaybackFps(d) ="<<d;
+		if(ui->viewer->playDirection() != PlaybackWidget::PlayForward)
+		{
+			ui->fps->setStyleSheet("background:green;color:white");
+			ui->viewer->setPlayDirection(PlaybackWidget::PlayForward);
+		}
+		ui->viewer->setPlaybackFps(d);
+	}
+	
+	if(ui->viewer->status() == PlaybackWidget::Paused && ! m_lockStatusChange)
+		ui->viewer->setStatus(PlaybackWidget::Playing);
+	
 	m_playbackFps = (double)d;
 }
 
@@ -154,39 +178,38 @@ void PlaybackDialog::setFps(int d)
 void PlaybackDialog::statusChanged(PlaybackWidget::Status s)
 {
 // 	qDebug() << "PlaybackDialog::statusChanged(): "<<s;
-	if(s == PlaybackWidget::Stopped)
+	
+	// If the statusChanged() signal is from the user clicking a button,
+	// set m_lockStatusChange so that the applyFpsValue() doesn't start
+	// playing when the user moves the slider. See applyFpsValue() for more 
+	// thoughts on this issue. 
+	if(m_statusFromButton)
+		m_lockStatusChange = true;
+	else
+		m_lockStatusChange = false;
+	m_statusFromButton = false;
+	
+	if(s == PlaybackWidget::Paused)
 	{
-		ui->stopButton->setEnabled(false);
 		ui->playButton->setIcon(style()->standardIcon(QStyle::SP_MediaPlay));
 	}
 	else
 	{
-		ui->stopButton->setEnabled(true);
-		if(s == PlaybackWidget::Playing)
-		{
-			ui->playButton->setIcon(style()->standardIcon(QStyle::SP_MediaPause));
-		}
-		else
-		{
-			ui->playButton->setIcon(style()->standardIcon(QStyle::SP_MediaPlay));
-		}
+		ui->playButton->setIcon(style()->standardIcon(QStyle::SP_MediaPause));
 	}
-}
-
-void PlaybackDialog::stopButtonClicked()
-{
-	ui->viewer->setStatus(PlaybackWidget::Stopped);
 }
 
 void PlaybackDialog::playButtonClicked()
 {
-	if(ui->viewer->status() != PlaybackWidget::Playing)
+	// Used in statusChanged()
+	m_statusFromButton = true;
+	if(ui->viewer->status() == PlaybackWidget::Playing)
 	{
-		ui->viewer->setStatus(PlaybackWidget::Playing);
+		ui->viewer->setStatus(PlaybackWidget::Paused);
 	}
 	else
 	{
-		ui->viewer->setStatus(PlaybackWidget::Paused);
+		ui->viewer->setStatus(PlaybackWidget::Playing);
 	}
 }
 

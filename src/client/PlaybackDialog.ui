@@ -73,13 +73,6 @@
           </widget>
          </item>
          <item>
-          <widget class="QPushButton" name="stopButton">
-           <property name="text">
-            <string/>
-           </property>
-          </widget>
-         </item>
-         <item>
           <widget class="QSlider" name="frameSlider">
            <property name="orientation">
             <enum>Qt::Horizontal</enum>
@@ -101,8 +94,11 @@
          </item>
          <item>
           <widget class="QSpinBox" name="fps">
+           <property name="styleSheet">
+            <string notr="true">background:green;color:white</string>
+           </property>
            <property name="minimum">
-            <number>1</number>
+            <number>-50</number>
            </property>
            <property name="maximum">
             <number>50</number>
@@ -112,7 +108,7 @@
          <item>
           <widget class="QSlider" name="horizontalSlider">
            <property name="minimum">
-            <number>1</number>
+            <number>-50</number>
            </property>
            <property name="maximum">
             <number>50</number>
