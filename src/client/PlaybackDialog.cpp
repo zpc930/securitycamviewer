@@ -73,6 +73,12 @@ void PlaybackDialog::setDailyRecordingPath(const QString& dailyPath)
 
 void PlaybackDialog::updateCalendarWidget(int year, int month)
 {
+	// Pause video if playing for performance 
+	PlaybackWidget::Status oldStatus = ui->viewer->status();
+	if(oldStatus == PlaybackWidget::Playing)
+		ui->viewer->setStatus(PlaybackWidget::Paused);
+	
+	// Setup the starting date (first of the month)
 	QDate date = QDate::currentDate();
 	if(year < 0)
 		year = date.year();
@@ -81,17 +87,17 @@ void PlaybackDialog::updateCalendarWidget(int year, int month)
 		
 	date.setDate(year,month,1);
 	
+	// Setup the last day of the month (the stopping point for the iterator)
 	QDate endOfMonth = date;
 	endOfMonth.setDate(year,month,date.daysInMonth());
 	
+	// Setup the format for use in the calendar to show which days have video
 	QTextCharFormat fmtHasFiles;
 	fmtHasFiles.setFontWeight(QFont::Bold);
 	
-	QTextCharFormat fmtNoFiles;
-	fmtNoFiles.setFontWeight(QFont::Normal);
 	//qDebug() << "updateCalendarWidget("<<year<<","<<month<<"): date:"<<date<<", endOfMonth:"<<endOfMonth;
 	
-	
+	// Setup a progress dialog because this loading loop can take a few seconds (5 - 30secs sometimes)
 	QProgressDialog progress(QString(tr("Loading Calendar")),tr("Stop Loading"),1,date.daysInMonth(),this);
 	progress.setWindowTitle(QString(tr("Loading Calendar...")));
 	progress.show();
@@ -111,20 +117,10 @@ void PlaybackDialog::updateCalendarWidget(int year, int month)
 		if(m_calendarChangeCount != startedAtCount)
 			break;
 			
-		QString path = m_dailyRecordingPath;
-		
-		QStringList parts = date.toString("yyyy-MM-dd").split("-");
-		path.replace("%Y",parts[0]);
-		path.replace("%m",parts[1]);
-		path.replace("%d",parts[2]);
-		
-		QDirIterator it(path, QDirIterator::Subdirectories);
-		if(it.hasNext())
+		if(ui->viewer->dateHasVideo(date.toString("yyyy-MM-dd")))
 			ui->calendarWidget->setDateTextFormat(date,fmtHasFiles);
-		else
-			ui->calendarWidget->setDateTextFormat(date,fmtNoFiles);
 			
-		date = date.addDays(1); 
+		date = date.addDays(1);
 		
 		// update the progress dialog
 		progress.setValue(date.day());
@@ -135,6 +131,8 @@ void PlaybackDialog::updateCalendarWidget(int year, int month)
 	}
 	
 	progress.close();
+	
+	ui->viewer->setStatus(oldStatus);
 }
 
 

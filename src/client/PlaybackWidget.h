@@ -33,6 +33,8 @@ public:
 	Status status() { return m_status; }
 	void setStatus(Status);
 	
+	bool dateHasVideo(const QString & date);
+	
 public slots:
 	void setDesiredSize(QSize);
 	
