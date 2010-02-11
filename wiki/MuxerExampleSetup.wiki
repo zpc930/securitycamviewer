@@ -1,4 +1,5 @@
 #summary Example Muxer Setup
+#labels Featured
 
 = Introduction =
 
@@ -64,7 +65,9 @@ Anyway, the slowest part of that chain is the jump from the church to the farmer
 
 To connect to the church, we open a ssh tunnel with port forwarding. Something like this:
 
+{{{
 ssh our.church.address -L8089:cameraserver:8089 'ping -i 5 localhost'
+}}}
 
 (Yes, I know ssh could go into the background for me, but I want it foreground because I wrap it in a perl loop to restart the tunnel if it goes down.)
 
@@ -92,4 +95,3 @@ The HTML is incredibly trivial:
 Note that this won't work in IE - IE will need a plugin to view the multpart JPEG stream.
 
 Cheers!
-
