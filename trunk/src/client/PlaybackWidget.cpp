@@ -18,8 +18,9 @@ PlaybackWidget::PlaybackWidget(QWidget *parent)
 	, m_currentFrame(0)
 	, m_playbackFps(30)
 	, m_currentPlaybackDate("")
-	, m_status(Stopped)
+	, m_status(Paused)
 	, m_lockCurrentFrameChange(false)
+	, m_playDirection(PlayForward)
 {
 	connect(&m_updateTimer, SIGNAL(timeout()), this, SLOT(updateImage()));
 	
@@ -52,11 +53,18 @@ void PlaybackWidget::setDailyRecordingPath(const QString& path)
 void PlaybackWidget::setPlaybackFps(double d)
 {
 	m_playbackFps = d;
+ 	//qDebug() << "PlaybackWidget::setPlaybackFps(): m_playbackFps:"<<m_playbackFps;
+ 	
 	m_updateTimer.stop();
 	m_updateTimer.setInterval((int)(1000/m_playbackFps));
 	m_updateTimer.start();
 	
-// 	qDebug() << "PlaybackWidget::setPlaybackFps(): m_playbackFps:"<<m_playbackFps;
+
+}
+
+void PlaybackWidget::setPlayDirection(PlayDirection d)
+{
+	m_playDirection = d;
 }
 
 void PlaybackWidget::setCurrentFrame(int d)
@@ -114,7 +122,7 @@ void PlaybackWidget::loadPlaybackDate(const QString & date)
 	path.replace("%Y",parts[0]);
 	path.replace("%m",parts[1]);
 	path.replace("%d",parts[2]);
-// 	qDebug() << "loadPlaybackDate("<<date<<"): Reading from path"<<path;
+ 	qDebug() << "loadPlaybackDate("<<date<<"): Reading from path"<<path;
 
 	m_files.clear();
 
@@ -142,15 +150,15 @@ void PlaybackWidget::loadPlaybackDate(const QString & date)
 	emit numFramesChanged(m_files.size()-1);
 	
 	setCurrentFrame(0);
+	setStatus(Playing);
 	
 	if(m_files.size() <= 0)
 	{
-		setStatus(Stopped);
+		setStatus(Paused);
 		QMessageBox::critical(this,tr("No Video Found"),QString(tr("Sorry, no video was found for %1.")).arg(date));
 		return;
 	}
 	
-	setStatus(Playing);
 }	
 	
 bool PlaybackWidget::dateHasVideo(const QString & date)
@@ -178,23 +186,41 @@ void PlaybackWidget::paintEvent(QPaintEvent */*event*/)
 	}
 // 	painter.setPen(QPen(Qt::white,2));
 // 	painter.setBrush(Qt::black);
-// 	painter.drawText(5,15,QString("%3 - %1/%2").arg(m_currentFrame).arg(m_files.size()).arg(status() == Playing ? "PLAYING" : "PAUSED/STOPPED"));
+// 	painter.drawText(5,15,QString("%3 - %1/%2").arg(m_currentFrame).arg(m_files.size()).arg(status() == Playing ? "PLAYING" : "PAUSED"));
 	
 }
 void PlaybackWidget::updateImage()
 {
 	if(status() == Playing)
 	{
-		if(m_currentFrame < m_files.size())
+		if(m_playDirection == PlayForward)
 		{
-			setCurrentFrame(m_currentFrame);
-			m_currentFrame++;
+			if(m_currentFrame < m_files.size())
+			{
+				setCurrentFrame(m_currentFrame);
+				m_currentFrame++;
+			}
+			else
+			{
+				setStatus(Paused);
+				setCurrentFrame(m_files.size()-1);
+			}
 		}
 		else
+		if(m_playDirection == PlayBackward)
 		{
-			setStatus(Stopped);
-			setCurrentFrame(m_files.size()-1);
+			if(m_currentFrame > 0)
+			{
+				setCurrentFrame(m_currentFrame);
+				m_currentFrame--;
+			}
+			else
+			{
+				setStatus(Paused);
+				setCurrentFrame(0);
+			}
 		}
+		
 	}
 }
 
@@ -202,8 +228,6 @@ void PlaybackWidget::setStatus(Status s)
 {
 // 	qDebug() << "PlaybackWidget::setStatus(): "<<s;
 	m_status = s;
-	if(s == Stopped)
-		setCurrentFrame(0);
 	emit statusChanged(s);
 	update();
 }

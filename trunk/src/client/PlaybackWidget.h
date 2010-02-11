@@ -29,9 +29,12 @@ public:
 	
 	int numFrames() { return m_files.size(); }
 	
-	typedef enum Status { Playing, Stopped, Paused };
+	typedef enum Status { Playing, Paused };
 	Status status() { return m_status; }
 	void setStatus(Status);
+	
+	typedef enum PlayDirection { PlayForward, PlayBackward };
+	PlayDirection playDirection() { return m_playDirection; }
 	
 	bool dateHasVideo(const QString & date);
 	
@@ -46,6 +49,8 @@ public slots:
 	
 	// date should be in YYYY-MM-DD
 	void loadPlaybackDate(const QString & date);
+	
+	void setPlayDirection(PlayDirection);
 	
 signals:
 	void currentFrameChanged(int);
@@ -78,6 +83,8 @@ private:
 	
 	// used to prevent loops in setCurrentFrame signals
 	bool m_lockCurrentFrameChange;
+	
+	PlayDirection m_playDirection;
 	
 
 };

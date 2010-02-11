@@ -34,10 +34,9 @@ private slots:
 	
 	void numFramesChanged(int);
 	void statusChanged(PlaybackWidget::Status);
-	void stopButtonClicked();
 	void playButtonClicked();
 	
-	void setFps(int);
+	void applyFpsValue(int);
 
 protected:
 	void changeEvent(QEvent *e);
@@ -48,6 +47,8 @@ private:
 	QString m_dailyRecordingPath;
 	double m_playbackFps;	
 	int m_calendarChangeCount;
+	bool m_lockStatusChange;
+	bool m_statusFromButton;
 };
 
 #endif // PLAYBACKDIALOG_H
