@@ -153,6 +153,18 @@ void PlaybackWidget::loadPlaybackDate(const QString & date)
 	setStatus(Playing);
 }	
 	
+bool PlaybackWidget::dateHasVideo(const QString & date)
+{
+	QString path = m_dailyRecordingPath;
+		
+	QStringList parts = date.split("-");
+	path.replace("%Y",parts[0]);
+	path.replace("%m",parts[1]);
+	path.replace("%d",parts[2]);
+	
+	QDirIterator it(path, QDirIterator::Subdirectories);
+	return it.hasNext();
+}
 	
 void PlaybackWidget::paintEvent(QPaintEvent */*event*/)
 {
@@ -181,6 +193,7 @@ void PlaybackWidget::updateImage()
 		else
 		{
 			setStatus(Stopped);
+			setCurrentFrame(m_files.size()-1);
 		}
 	}
 }
