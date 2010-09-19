@@ -148,6 +148,8 @@ MainWindow::MainWindow(QString configFile, bool verbose, QWidget *parent)
 		int     port = settings.value(portKey,mainPort).toInt();
 		QString path = settings.value(pathKey,mainPath).toString();
 		
+		QString user = settings.value(QString("%1/user").arg(group),"").toString();
+		QString pass = settings.value(QString("%1/pass").arg(group),"").toString();
 		
 		CameraViewerWidget * viewer = new CameraViewerWidget(this);
 		
@@ -187,7 +189,7 @@ MainWindow::MainWindow(QString configFile, bool verbose, QWidget *parent)
 		
 		
 		
-		viewer->connectTo(host,port,path);
+		viewer->connectTo(host,port,path,user,pass);
 		viewer->setDesiredSize(m_frameSize);
 		viewer->setLiveFps(fps);
 		

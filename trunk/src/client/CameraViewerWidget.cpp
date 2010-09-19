@@ -59,7 +59,7 @@ QSize CameraViewerWidget::sizeHint() const
 	return m_desiredSize;
 }
 	
-MjpegClient * CameraViewerWidget::connectTo(QString host, int port, QString path)
+MjpegClient * CameraViewerWidget::connectTo(QString host, int port, QString path, const QString& user, const QString& pass)
 {
 	if(m_client)
 	{
@@ -69,7 +69,7 @@ MjpegClient * CameraViewerWidget::connectTo(QString host, int port, QString path
 	}
 	
 	m_client = new MjpegClient();
-	m_client->connectTo(host,port,path);
+	m_client->connectTo(host,port,path,user,pass);
 	m_client->setAutoResize(rect().size());
 	// TODO catch resize event and update autoresize accordingly
 	m_client->start();
