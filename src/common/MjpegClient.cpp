@@ -11,6 +11,8 @@ MjpegClient::MjpegClient(QObject *parent)
 	, m_firstBlock(true)
 	, m_dataBlock("")
 	, m_autoReconnect(true)
+	, m_autoResize(-1,-1)
+	, m_flipImage(false)
 	
 {
 #ifdef MJPEG_TEST
@@ -49,7 +51,7 @@ bool MjpegClient::connectTo(const QString& host, int port, QString url, const QS
 	connect(m_socket, SIGNAL(connected()),    this, SIGNAL(socketConnected()));
 	connect(m_socket, SIGNAL(connected()),    this,   SLOT(connectionReady()));
 	connect(m_socket, SIGNAL(error(QAbstractSocket::SocketError)), this, SIGNAL(socketError(QAbstractSocket::SocketError)));
-	connect(m_socket, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(lostConnection()));
+	connect(m_socket, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(lostConnection(QAbstractSocket::SocketError)));
 	
 	m_socket->connectToHost(host,port);
 	m_socket->setReadBufferSize(1024 * 1024);
@@ -90,6 +92,15 @@ void MjpegClient::lostConnection()
 		QTimer::singleShot(1000,this,SLOT(reconnect()));
 }
 
+void MjpegClient::lostConnection(QAbstractSocket::SocketError error)
+{
+	qDebug() << "MjpegClient::lostConnection("<<error<<"):" << m_socket->errorString();
+	
+	if(error == QAbstractSocket::ConnectionRefusedError)
+		lostConnection();
+}
+
+
 void MjpegClient::reconnect()
 {
 	log(QString("Attempting to reconnect to http://%1:%2%3").arg(m_host).arg(m_port).arg(m_url));
@@ -98,19 +109,11 @@ void MjpegClient::reconnect()
 
 void MjpegClient::dataReady()
 {
-// 	while(m_socket && m_socket->bytesAvailable())
-// 	{
-		QByteArray bytes = m_socket->readAll();
-		if(bytes.size() > 0)
-		{
-			m_dataBlock.append(bytes);
-			processBlock();
-		}
-// 	}
-	
-	if(m_socket && m_socket->bytesAvailable())
+	QByteArray bytes = m_socket->readAll();
+	if(bytes.size() > 0)
 	{
-		QTimer::singleShot(0, this, SLOT(dataReady()));
+		m_dataBlock.append(bytes);
+		processBlock();
 	}
 }
 
@@ -207,12 +210,20 @@ void MjpegClient::processBlock()
 					{
 					
 						QImage frame = QImage::fromData(block);
+						if(m_flipImage)
+							frame = frame.mirrored(true,true);
+						
 						
 						if(!frame.isNull())
 						{
-							if(!m_autoResize.isNull() && m_autoResize != frame.size())
+// 							qDebug() << "processBlock(): New image received, original size:"<<frame.size()<<", bytes:"<<block.length();
+							
+							if(m_autoResize.width()>0 && m_autoResize.height()>0 && 
+							   m_autoResize != frame.size())
 								frame = frame.scaled(m_autoResize);
 						
+							
+// 							qDebug() << "processBlock(): Emitting new image, size:"<<frame.size();
 							emit newImage(frame);
 						}	
 						
@@ -232,7 +243,7 @@ void MjpegClient::processBlock()
 		
 	}
 	
-	//qDebug() << "processBlock(): End of processing, m_dataBlock.size() remaining:"<<m_dataBlock.size();
+// 	qDebug() << "processBlock(): End of processing, m_dataBlock.size() remaining:"<<m_dataBlock.size();
 }
 
 void MjpegClient::exit()

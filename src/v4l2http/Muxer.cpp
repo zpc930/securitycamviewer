@@ -1,7 +1,7 @@
 #include "Muxer.h"
 
 #include "JpegServer.h"
-#include "MjpegClient.h"
+#include "SimpleV4L2.h"
 
 #include <math.h>
 #include <QPainter>
@@ -79,20 +79,29 @@ Muxer::Muxer(QString configFile, bool verbose, QObject *parent)
 		QString hostKey = QString("%1/host").arg(group);
 		QString portKey = QString("%1/port").arg(group);
 		QString pathKey = QString("%1/path").arg(group);
-		QString flipKey = QString("%1/flip").arg(group);
 		
 		QString host = settings.value(hostKey,mainHost).toString();
 		int     port = settings.value(portKey,mainPort).toInt();
 		QString path = settings.value(pathKey,mainPath).toString();
-		bool    flip = settings.value(flipKey,0).toInt() == 1;
 		
-		MjpegClient * client = new MjpegClient();
-		client->connectTo(host,port,path);
 			
-		client->setAutoReconnect(true);
-		client->setAutoResize(m_frameSize);
-		client->setFlipImage(flip);
-		client->start();
+		SimpleV4L2 * client = new SimpleV4L2();
+		if(client->openDevice(qPrintable(host)))
+		{
+			bool flag = client->setInput("Composite");
+			if(!flag)
+				flag = client->setInput("Composite1");
+			
+			if(flag)
+				client->setStandard("NTSC");
+		}
+		
+		client->initDevice();
+		client->startCapturing();
+			
+// 		client->setAutoReconnect(true);
+// 		client->setAutoResize(m_frameSize);
+// 		client->start();
 		
 		m_threads    << client;
 		m_images     << QImage();
@@ -105,7 +114,7 @@ Muxer::Muxer(QString configFile, bool verbose, QObject *parent)
 		t.start();
 		m_time       << t;
 		
-		connect(client, SIGNAL(newImage(QImage)), this, SLOT(newImage(QImage)));
+		//connect(client, SIGNAL(newImage(QImage)), this, SLOT(newImage(QImage)));
 		
 		if(verbose)
 			qDebug() << "Muxer: Setup camera "<<i<<" using host"<<host<<", port"<<port<<", path"<<path;
@@ -168,9 +177,10 @@ Muxer::~Muxer()
 {
 	while(!m_threads.isEmpty())
 	{
-		MjpegClient * client = m_threads.takeFirst();
-		client->quit();
-		client->wait();
+		SimpleV4L2 * client = m_threads.takeFirst();
+// 		client->quit();
+// 		client->wait();
+		//client->closeDevice();
 		delete client;
 		client = 0;
 	}
@@ -197,7 +207,7 @@ void Muxer::applySize(int x, int y)
 
 void Muxer::newImage(QImage image)
 {
-	MjpegClient * client = dynamic_cast<MjpegClient*>(sender());
+	SimpleV4L2 * client = dynamic_cast<SimpleV4L2*>(sender());
 	if(client)
 	{
 		int index = m_threads.indexOf(client);
@@ -224,6 +234,14 @@ void Muxer::updateFrames()
 	QPainter painter(&m_muxedImage);
 	
 	bool changed = false;
+	
+	foreach(SimpleV4L2* client, m_threads)
+	{
+		int index = m_threads.indexOf(client);
+		m_images[index] = client->readFrame();
+		m_wasChanged[index] = true;
+	}
+		
 	
 	int length = m_images.size();
 	for(int i=0;i<length;i++)

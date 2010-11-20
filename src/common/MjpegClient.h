@@ -35,6 +35,9 @@ public:
 	int port() { return m_port; }
 	QString path() { return m_url; }
 	
+	bool flipImage() { return m_flipImage; }
+	void setFlipImage(bool flip) { m_flipImage = flip; }
+	
 signals:
 	void socketDisconnected();
 	void socketError(QAbstractSocket::SocketError);
@@ -46,6 +49,7 @@ private slots:
 	void dataReady();
 	void processBlock();
 	void lostConnection();
+	void lostConnection(QAbstractSocket::SocketError);
 	void reconnect();
 	void connectionReady();
 
@@ -66,6 +70,8 @@ private:
 	QString m_url;
 	QString m_user;
 	QString m_pass;
+	
+	bool m_flipImage;
 	
 #ifdef MJPEG_TEST
 	QLabel *m_label;
