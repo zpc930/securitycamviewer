@@ -6,6 +6,8 @@
 #include <QTcpSocket>
 #include <QImageWriter>
 
+#define JPEG_ADAPTIVE_WRITE_MAX_SKIPPED_FRAMES 10
+
 class JpegServer : public QTcpServer
 {
 	Q_OBJECT
@@ -57,6 +59,7 @@ private:
 	QByteArray m_boundary;
 	QImageWriter m_writer;
 	bool m_adaptiveWriteEnabled;
+	int m_skippedFrames;
 	
 };
 

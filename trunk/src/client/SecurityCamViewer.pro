@@ -32,3 +32,12 @@ SOURCES       = ../common/MjpegClient.cpp \
 QT           += network
 
 CONFIG += debug
+
+
+opencv: {
+	HEADERS += ../common/EyeCounter.h
+	SOURCES += ../common/EyeCounter.cpp
+	
+	DEFINES += OPENCV_ENABLED
+	LIBS += -L/usr/local/lib -lcv -lcxcore
+}
