@@ -8,6 +8,10 @@
 #include <QMenu>
 #include <QDebug>
 
+#ifdef OPENCV_ENABLED
+#include "EyeCounter.h"
+#endif
+
 CameraViewerWidget::CameraViewerWidget(QWidget *parent)
 	: QWidget(parent)
 	, m_client(0)
@@ -16,6 +20,10 @@ CameraViewerWidget::CameraViewerWidget(QWidget *parent)
 	, m_dailyRecordingPath("")
 	, m_playbackFps(2)
 	, m_liveFps(2)
+	#ifdef OPENCV_ENABLED
+	, m_counter(0)
+	, m_logFilePtr(0)
+	#endif
 {
 	setContextMenuPolicy(Qt::CustomContextMenu);
 	connect(this, SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(showCustomContextMenu(QPoint)));
@@ -36,6 +44,28 @@ CameraViewerWidget::~CameraViewerWidget()
 		delete m_client;
 		m_client = 0;
 	}
+}
+
+void CameraViewerWidget::enableEyeDetection(bool highlightEyes, QString logFile)
+{
+	#ifdef OPENCV_ENABLED
+	m_highlightEyes = highlightEyes;
+	m_logFile = logFile;
+
+	m_counter = new EyeCounter();
+	
+	if(!m_logFile.isEmpty())
+	{
+		m_logFilePtr = new QFile(m_logFile);
+		
+		if (!m_logFilePtr->open(QIODevice::WriteOnly | QIODevice::Text))
+		{
+			qDebug() << "CameraViewerWidget: Unable to open"<<m_logFile<<" for writing.";
+			delete m_logFilePtr ;
+			m_logFilePtr  = 0;
+		}
+	}
+	#endif
 }
 	
 void CameraViewerWidget::setLiveFps(double fps)
@@ -86,7 +116,6 @@ void CameraViewerWidget::paintEvent(QPaintEvent */*event*/)
 
 	if(!m_currentImage.isNull())
 	{
-	
 		painter.drawImage(rect(),m_currentImage);
 	}
 	else
@@ -99,6 +128,41 @@ void CameraViewerWidget::paintEvent(QPaintEvent */*event*/)
 
 void CameraViewerWidget::newImage(QImage image)
 {
+	#ifdef OPENCV_ENABLED
+	if(m_counter)
+	{
+		QList<EyeCounterResult> faces = m_counter->detectEyes(image, true);
+		
+		QPainter painter(&image);
+		
+		int facesWithEyesCount;
+		int eyesCount;
+		foreach(EyeCounterResult res, faces)
+		{
+			if(!res.allEyes.isEmpty())
+				facesWithEyesCount ++;
+			eyesCount += res.allEyes.size();
+				
+			if(m_highlightEyes)
+			{
+				painter.setPen(Qt::red);
+				painter.drawRect(res.face);
+				
+				painter.setPen(Qt::green);
+				foreach(QRect eye, res.allEyes)
+					painter.drawRect(eye);
+			}
+		}
+		
+		if(m_logFilePtr)
+		{
+			QTextStream out(m_logFilePtr);
+			out << QDateTime::currentDateTime ().toString("yyyy-dd-MM hh:mm:ss") << "," << faces.size() << facesWithEyesCount << eyesCount;
+		}
+		
+	}
+	#endif
+	
 	m_currentImage = image;
 }
 
@@ -136,6 +200,11 @@ void CameraViewerWidget::showPlaybackDialog()
 		//qDebug() << "CameraViewerWidget::showPlaybackDialog(): dailyRecordingPath():"<<dailyRecordingPath();
 		d->setDailyRecordingPath(dailyRecordingPath());
 		d->setPlaybackFps(playbackFps());
+		
+		#ifdef OPENCV_ENABLED
+		if(m_counter)
+			d->enableEyeDetection(m_highlightEyes, m_logFile);
+		#endif
 		
 		d->adjustSize();
 		d->show();

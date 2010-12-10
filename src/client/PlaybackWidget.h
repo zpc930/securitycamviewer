@@ -6,7 +6,9 @@
 #include <QImage>
 #include <QTimer>
 
-
+#ifdef OPENCV_ENABLED
+#include "../common/EyeCounter.h"
+#endif
 
 class PlaybackWidget : public QWidget
 {
@@ -17,8 +19,6 @@ public:
 	
 	// QWidget::
 	virtual QSize sizeHint () const;
-	
-	bool playbackEnabled() { return m_playbackEnabled; }
 	
 	QString dailyRecordingPath() { return m_dailyRecordingPath; }
 	
@@ -52,6 +52,8 @@ public slots:
 	
 	void setPlayDirection(PlayDirection);
 	
+	void enableEyeDetection(bool highlightEyes, QString logFile);
+	
 signals:
 	void currentFrameChanged(int);
 	void numFramesChanged(int);
@@ -68,7 +70,6 @@ private:
 	
 	QTimer m_updateTimer;
 		
-	bool m_playbackEnabled;
 	QSize m_desiredSize;
 	
 	QString m_dailyRecordingPath;
@@ -86,7 +87,12 @@ private:
 	
 	PlayDirection m_playDirection;
 	
-
+	#ifdef OPENCV_ENABLED
+	EyeCounter *m_counter;
+	QString m_logFile;
+	QFile *m_logFilePtr;
+	bool m_highlightEyes;
+	#endif
 };
 
 #endif

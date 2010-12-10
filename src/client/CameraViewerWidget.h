@@ -7,6 +7,7 @@
 #include <QTimer>
 
 class MjpegClient;
+class EyeCounter;
 
 class CameraViewerWidget : public QWidget
 {
@@ -36,6 +37,8 @@ public slots:
  	void setPlaybackFps(double d) { m_playbackFps = d; }
 	void setLiveFps(double);
 	
+	void enableEyeDetection(bool highlightEyes=true, QString logFile="eye-counting.csv");
+	
 protected:
 	void paintEvent(QPaintEvent *event);
 
@@ -57,6 +60,13 @@ private:
  	double m_playbackFps;
 	
 	double m_liveFps;
+	
+	#ifdef OPENCV_ENABLED
+	EyeCounter *m_counter;
+	QString m_logFile;
+	QFile *m_logFilePtr;
+	bool m_highlightEyes;
+	#endif
 };
 
 #endif //CameraViewerWidget_H

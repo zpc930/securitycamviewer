@@ -34,6 +34,7 @@ JpegServerThread::JpegServerThread(int socketDescriptor, bool adaptiveWriteEnabl
     : QThread(parent)
     , m_socketDescriptor(socketDescriptor)
     , m_adaptiveWriteEnabled(adaptiveWriteEnabled)
+    , m_skippedFrames(0)
 {
 	
 }
@@ -82,12 +83,14 @@ void JpegServerThread::imageReady(QImage *tmp)
  	frameCounter++;
 //  	qDebug() << "JpegServerThread: [START] Writing Frame#:"<<frameCounter;
 	
-	if(m_adaptiveWriteEnabled && m_socket->bytesToWrite() > 0)
+	if(m_adaptiveWriteEnabled && m_socket->bytesToWrite() > 0 && m_skippedFrames < JPEG_ADAPTIVE_WRITE_MAX_SKIPPED_FRAMES)
 	{
 		qDebug() << "JpegServerThread::imageReady():"<<m_socket->bytesToWrite()<<"bytes pending write on socket, not sending image"<<frameCounter;
+		m_skippedFrames ++;
 	}
 	else
 	{
+		m_skippedFrames = 0;
 		if(image.format() != QImage::Format_RGB32)
 			image = image.convertToFormat(QImage::Format_RGB32);
 		

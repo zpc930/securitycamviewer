@@ -10,12 +10,20 @@
 
 #include <QCoreApplication>
 
+#ifdef OPENCV_ENABLED
+#include "EyeCounter.h"
+#endif
+
 Muxer::Muxer(QString configFile, bool verbose, QObject *parent)
 	: QObject(parent)
 	, m_jpegServer(0)
 	, m_cols(-1)
 	, m_rows(-1)
 	, m_verbose(verbose)
+	#ifdef OPENCV_ENABLED
+	, m_counter(0)
+	, m_logFilePtr(0)
+	#endif
 {
 	m_jpegServer = new JpegServer();
 	m_jpegServer->setProvider(this, SIGNAL(imageReady(QImage*)));
@@ -46,6 +54,30 @@ Muxer::Muxer(QString configFile, bool verbose, QObject *parent)
 		_exit(2);
 		return;
 	}
+	
+	#ifdef OPENCV_ENABLED
+	bool enableEyeCounting = settings.value("eye-counting","true").toString() == "true";
+	
+	if(enableEyeCounting)
+	{
+		m_highlightEyes = settings.value("eye-highlight","true").toString() == "true";
+		m_logFile = settings.value("eye-logfile","eyes-log.csv").toString();
+	
+		m_counter = new EyeCounter();
+		
+		if(!m_logFile.isEmpty())
+		{
+			m_logFilePtr = new QFile(m_logFile);
+			
+			if (!m_logFilePtr->open(QIODevice::WriteOnly | QIODevice::Text))
+			{
+				qDebug() << "Muxer: Unable to open"<<m_logFile<<" for writing.";
+				delete m_logFilePtr ;
+				m_logFilePtr  = 0;
+			}
+		}
+	}
+	#endif
 	
 	int numCameras = settings.value("num-cams",0).toInt();
 	
@@ -210,12 +242,47 @@ void Muxer::newImage(QImage image)
 		int time =  m_time[index].restart();
 		m_durations[index] += time;
 		
+		
 		if(m_verbose)
 		{
 			qDebug() << "Muxer: Received image from camera # "<<index << " at "<<(((double)time)/1000.0)<<"sec, avg duration:"<<(m_durations[index] / m_counts[index]);
 		}
 			
+		
+		#ifdef OPENCV_ENABLED
+		if(m_counter)
+		{
+			QList<EyeCounterResult> faces = m_counter->detectEyes(image, true);
 			
+			QPainter painter(&image);
+			
+			int facesWithEyesCount;
+			int eyesCount;
+			foreach(EyeCounterResult res, faces)
+			{
+				if(!res.allEyes.isEmpty())
+					facesWithEyesCount ++;
+				eyesCount += res.allEyes.size();
+				 
+				if(m_highlightEyes)
+				{
+					painter.setPen(Qt::red);
+					painter.drawRect(res.face);
+					
+					painter.setPen(Qt::green);
+					foreach(QRect eye, res.allEyes)
+						painter.drawRect(eye);
+				}
+			}
+			
+			if(m_logFilePtr)
+			{
+				QTextStream out(m_logFilePtr);
+				out << QDateTime::currentDateTime ().toString("yyyy-dd-MM hh:mm:ss") << "," << faces.size() << facesWithEyesCount << eyesCount;
+			}
+			
+		}
+		#endif	
 	}
 }
 

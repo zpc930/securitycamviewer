@@ -21,6 +21,10 @@ PlaybackWidget::PlaybackWidget(QWidget *parent)
 	, m_status(Paused)
 	, m_lockCurrentFrameChange(false)
 	, m_playDirection(PlayForward)
+	#ifdef OPENCV_ENABLED
+	, m_counter(0)
+	, m_logFilePtr(0)
+	#endif
 {
 	connect(&m_updateTimer, SIGNAL(timeout()), this, SLOT(updateImage()));
 	
@@ -67,6 +71,29 @@ void PlaybackWidget::setPlayDirection(PlayDirection d)
 	m_playDirection = d;
 }
 
+void PlaybackWidget::enableEyeDetection(bool highlightEyes, QString logFile)
+{
+	#ifdef OPENCV_ENABLED
+	m_highlightEyes = highlightEyes;
+	m_logFile = logFile;
+
+	m_counter = new EyeCounter();
+	
+	if(!m_logFile.isEmpty())
+	{
+		m_logFilePtr = new QFile(m_logFile);
+		
+		if (!m_logFilePtr->open(QIODevice::WriteOnly | QIODevice::Text))
+		{
+			qDebug() << "CameraViewerWidget: Unable to open"<<m_logFile<<" for writing.";
+			delete m_logFilePtr ;
+			m_logFilePtr  = 0;
+		}
+	}
+	#endif
+}
+	
+	
 void PlaybackWidget::setCurrentFrame(int d)
 {
 	if(m_lockCurrentFrameChange)
@@ -91,6 +118,41 @@ void PlaybackWidget::setCurrentFrame(int d)
 		m_desiredSize = m_currentImage.size();
 		resize(m_desiredSize);
 	}	
+	
+	#ifdef OPENCV_ENABLED
+	if(m_counter)
+	{
+		QList<EyeCounterResult> faces = m_counter->detectEyes(m_currentImage, true);
+		
+		QPainter painter(&m_currentImage);
+		
+		int facesWithEyesCount;
+		int eyesCount;
+		foreach(EyeCounterResult res, faces)
+		{
+			if(!res.allEyes.isEmpty())
+				facesWithEyesCount ++;
+			eyesCount += res.allEyes.size();
+				
+			if(m_highlightEyes)
+			{
+				painter.setPen(Qt::red);
+				painter.drawRect(res.face);
+				
+				painter.setPen(Qt::green);
+				foreach(QRect eye, res.allEyes)
+					painter.drawRect(eye);
+			}
+		}
+		
+		if(m_logFilePtr)
+		{
+			QTextStream out(m_logFilePtr);
+			out << QDateTime::currentDateTime ().toString("yyyy-dd-MM hh:mm:ss") << "," << faces.size() << facesWithEyesCount << eyesCount;
+		}
+		
+	}
+	#endif
 	
 	emit currentFrameChanged(m_currentFrame);
 	

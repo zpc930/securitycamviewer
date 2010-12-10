@@ -6,11 +6,13 @@
 #include <QTime>
 #include <QImage>
 #include <QSize>
+#include <QFile>
 
 #define LISTEN_PORT 8088
 
 class JpegServer;
 class MjpegClient;
+class EyeCounter;
 
 class Muxer : public QObject
 {
@@ -50,6 +52,13 @@ private:
 	QList<bool> m_wasChanged;
 	
 	bool m_verbose;
+	
+	#ifdef OPENCV_ENABLED
+	EyeCounter *m_counter;
+	QString m_logFile;
+	QFile *m_logFilePtr;
+	bool m_highlightEyes;
+	#endif
 };
 
 #endif // Muxer_H

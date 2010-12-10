@@ -24,5 +24,13 @@ SOURCES       = ../common/MjpegClient.cpp \
 		main.cpp
 QT           += network
 
+opencv: {
+	HEADERS += ../common/EyeCounter.h
+	SOURCES += ../common/EyeCounter.cpp
+	
+	DEFINES += OPENCV_ENABLED
+	LIBS += -L/usr/local/lib -lcv -lcxcore
+}
+
 # Needed for centos 5.3
 LIBS += -L/opt/fontconfig-2.4.2/lib -lfontconfig

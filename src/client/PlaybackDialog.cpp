@@ -41,6 +41,11 @@ PlaybackDialog::~PlaybackDialog()
 	delete ui;
 }
 
+void PlaybackDialog::enableEyeDetection(bool highlightEyes, QString logFile)
+{
+	ui->viewer->enableEyeDetection(highlightEyes, logFile);
+}
+
 void PlaybackDialog::showEvent(QShowEvent *)
 {
 	ui->viewer->loadPlaybackDate(ui->viewer->currentPlaybackDate());

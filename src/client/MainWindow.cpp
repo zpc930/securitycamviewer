@@ -40,6 +40,19 @@ MainWindow::MainWindow(QString configFile, bool verbose, QWidget *parent)
 	if(verbose)
 		qDebug() << "Viewer: Frame size: "<<m_frameSize.width()<<"x"<<m_frameSize.height();
 	
+	#ifdef OPENCV_ENABLED
+	bool enableEyeCounting = settings.value("eye-counting","true").toString() == "true";
+	bool highlightEyes;
+	QString logFile;
+	
+	if(enableEyeCounting)
+	{
+		highlightEyes = settings.value("eye-highlight","true").toString() == "true";
+		logFile = settings.value("eye-logfile","eyes-log.csv").toString();
+
+	}
+	#endif
+	
 	// Setup all the threads and create the labels to view the images
 	int numCameras = settings.value("num-cams",0).toInt();
 	
@@ -152,6 +165,11 @@ MainWindow::MainWindow(QString configFile, bool verbose, QWidget *parent)
 		QString pass = settings.value(QString("%1/pass").arg(group),"").toString();
 		
 		CameraViewerWidget * viewer = new CameraViewerWidget(this);
+		
+		#ifdef OPENCV_ENABLED
+		if(enableEyeCounting)
+			viewer->enableEyeDetection(highlightEyes, logFile);
+		#endif
 		
 		QString recPath = settings.value(QString("%1/rec-daily-root").arg(group),"").toString();
 		if(!recPath.isEmpty() || assumeThreadFromPort)

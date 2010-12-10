@@ -27,6 +27,7 @@ protected:
 public slots:
 	void setDailyRecordingPath(const QString& path);
 	void setPlaybackFps(double d);
+	void enableEyeDetection(bool highlightEyes, QString logFile);
 
 private slots:
 	void updateCalendarWidget(int year=-1, int month=-1);
