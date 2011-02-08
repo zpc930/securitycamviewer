@@ -5,7 +5,7 @@
 
 This is a basic guide on compiling DViz using Qt's SDK.
 
-= What to Build
+= What to Build =
 
 The SecurityCamViewer source tree contains two distinct executable targets. 
 
