@@ -41,6 +41,8 @@ Muxer::Muxer(QString configFile, bool verbose, QObject *parent)
 	if(verbose)
 		qDebug() << "Muxer: Frame size: "<<m_frameSize.width()<<"x"<<m_frameSize.height();
 	
+	// Get this here because we set client fps if poll mode
+	int fps = settings.value("fps",2).toInt();
 	
 	// Setup the server-side of the muxer
 	int listenPort = settings.value("listen-port",8088).toInt();
@@ -112,11 +114,15 @@ Muxer::Muxer(QString configFile, bool verbose, QObject *parent)
 		QString portKey = QString("%1/port").arg(group);
 		QString pathKey = QString("%1/path").arg(group);
 		QString flipKey = QString("%1/flip").arg(group);
+		QString pollKey = QString("%1/poll").arg(group);
+		QString fpsKey  = QString("%1/fps").arg(group);
 		
 		QString host = settings.value(hostKey,mainHost).toString();
 		int     port = settings.value(portKey,mainPort).toInt();
 		QString path = settings.value(pathKey,mainPath).toString();
 		bool    flip = settings.value(flipKey,0).toInt() == 1;
+		bool    poll = settings.value(pollKey,0).toInt() == 1;
+		int     cfps = settings.value(fpsKey,fps).toInt();
 		
 		MjpegClient * client = new MjpegClient();
 		client->connectTo(host,port,path);
@@ -124,6 +130,8 @@ Muxer::Muxer(QString configFile, bool verbose, QObject *parent)
 		client->setAutoReconnect(true);
 		client->setAutoResize(m_frameSize);
 		client->setFlipImage(flip);
+		client->setPollingMode(poll);
+		client->setPollingFps(cfps);
 		client->start();
 		
 		m_threads    << client;
@@ -186,8 +194,6 @@ Muxer::Muxer(QString configFile, bool verbose, QObject *parent)
 	
 	// Setup the frame generation timer 
 	connect(&m_updateTimer, SIGNAL(timeout()), this, SLOT(updateFrames()));
-	
-	int fps = settings.value("fps",2).toInt();
 	
 	m_updateTimer.setInterval(1000/fps);
 	m_updateTimer.start();

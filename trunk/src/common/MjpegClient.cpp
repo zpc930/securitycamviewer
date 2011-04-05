@@ -13,7 +13,8 @@ MjpegClient::MjpegClient(QObject *parent)
 	, m_autoReconnect(true)
 	, m_autoResize(-1,-1)
 	, m_flipImage(false)
-	
+	, m_pollMode(false)
+	, m_pollFps(15)
 {
 #ifdef MJPEG_TEST
 	m_label = new QLabel();
@@ -103,7 +104,7 @@ void MjpegClient::lostConnection(QAbstractSocket::SocketError error)
 
 void MjpegClient::reconnect()
 {
-	log(QString("Attempting to reconnect to http://%1:%2%3").arg(m_host).arg(m_port).arg(m_url));
+	//log(QString("Attempting to reconnect to http://%1:%2%3").arg(m_host).arg(m_port).arg(m_url));
 	connectTo(m_host,m_port,m_url);
 }
 
@@ -199,12 +200,12 @@ void MjpegClient::processBlock()
 				
 				if(headerLength)
 				{
-					//QString header = block.left(headerLength);
+					QString header = block.left(headerLength);
 					
 					block.remove(0,headerLength);
 					
 					// Block should now be just data
-					//qDebug() << "processBlock(): block length:"<<block.length()<<", headerLength:"<<headerLength<<", header:"<<header;
+					qDebug() << "processBlock(): block length:"<<block.length()<<", headerLength:"<<headerLength<<", header:"<<header;
 					
 					if(block.length() > 0)
 					{
@@ -216,7 +217,7 @@ void MjpegClient::processBlock()
 						
 						if(!frame.isNull())
 						{
-// 							qDebug() << "processBlock(): New image received, original size:"<<frame.size()<<", bytes:"<<block.length();
+ 							qDebug() << "processBlock(): New image received, original size:"<<frame.size()<<", bytes:"<<block.length();
 							
 							if(m_autoResize.width()>0 && m_autoResize.height()>0 && 
 							   m_autoResize != frame.size())
@@ -260,3 +261,75 @@ void MjpegClient::exit()
 }
 
 
+void MjpegClient::setPollingMode(bool flag)
+{
+	m_pollMode = flag;
+	if(flag)
+	{
+		exit();
+		QTimer::singleShot(1000 / m_pollFps, this, SLOT(pollServer()));
+	}
+	else
+	{
+		exit();
+		QTimer::singleShot(1000 / m_pollFps, this, SLOT(reconnect()));
+	}
+}
+
+void MjpegClient::pollServer()
+{
+	loadUrl(QString("http://%1:%2%3").arg(m_host).arg(m_port).arg(m_url));
+}
+
+void MjpegClient::loadUrl(const QString &location) 
+{
+	QUrl url(location);
+	
+	//qDebug() << "MjpegClient::loadUrl(): url:"<<url;
+
+	QNetworkAccessManager *manager = new QNetworkAccessManager(this);
+	connect(manager, SIGNAL(finished(QNetworkReply*)),
+		this, SLOT(handleNetworkData(QNetworkReply*)));
+	manager->get(QNetworkRequest(url));
+}
+
+void MjpegClient::handleNetworkData(QNetworkReply *networkReply) 
+{
+	QUrl url = networkReply->url();
+	if (!networkReply->error())
+	{
+		//parseData(QString::fromUtf8(networkReply->readAll()));
+		QImage frame = QImage::fromData(networkReply->readAll());
+		if(m_flipImage)
+			frame = frame.mirrored(true,true);
+		
+		if(!frame.isNull())
+		{
+			//qDebug() << "MjpegClient::handleNetworkData(): New image received, original size:"<<frame.size()<<", bytes:"<<block.length();
+			
+			if(m_autoResize.width()>0 && m_autoResize.height()>0 && 
+			   m_autoResize != frame.size())
+				frame = frame.scaled(m_autoResize);
+		
+			
+			//qDebug() << "processBlock(): Emitting new image, size:"<<frame.size();
+			emit newImage(frame);
+		}	
+		
+		if(m_pollMode)
+		{
+			int ms = 1000 / m_pollFps;
+			qDebug() << "MjpegClient::handleNetworkData(): Time till next request:"<<ms<<"ms";
+			QTimer::singleShot(ms, this, SLOT(pollServer()));
+		}
+		
+		#ifdef MJPEG_TEST
+		QPixmap pix = QPixmap::fromImage(frame);
+		m_label->setPixmap(pix);
+		m_label->resize(pix.width(),pix.height());
+		#endif
+	}
+	
+	networkReply->deleteLater();
+	networkReply->manager()->deleteLater();
+}
