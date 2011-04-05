@@ -4,6 +4,7 @@
 #include <QObject>
 #include <QByteArray>
 #include <QTcpSocket>
+#include <QtNetwork>
 
 #include <QThread>
 #include <QImage>
@@ -38,6 +39,12 @@ public:
 	bool flipImage() { return m_flipImage; }
 	void setFlipImage(bool flip) { m_flipImage = flip; }
 	
+	bool pollingMode() { return m_pollMode; }
+	void setPollingMode(bool flag);
+	
+	int pollingFps() { return m_pollFps; }
+	void setPollingFps(int fps) { m_pollFps = fps; }
+	
 signals:
 	void socketDisconnected();
 	void socketError(QAbstractSocket::SocketError);
@@ -52,6 +59,11 @@ private slots:
 	void lostConnection(QAbstractSocket::SocketError);
 	void reconnect();
 	void connectionReady();
+	
+	// polling slots
+	void loadUrl(const QString &url);
+	void handleNetworkData(QNetworkReply *networkReply);
+	void pollServer();
 
 private:
 	void log(const QString&);
@@ -72,6 +84,8 @@ private:
 	QString m_pass;
 	
 	bool m_flipImage;
+	bool m_pollMode;
+	int  m_pollFps;
 	
 #ifdef MJPEG_TEST
 	QLabel *m_label;

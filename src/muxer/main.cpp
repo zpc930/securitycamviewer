@@ -1,5 +1,6 @@
 
 #include <QCoreApplication>
+//#include <QApplication>
 #include "Muxer.h"
 
 #include "../common/getopt/getopt.h"
@@ -10,6 +11,7 @@
 int muxer(int argc, char *argv[],bool verbose)
 {
 	QCoreApplication app(argc, argv);
+	//QApplication app(argc, argv);
 	
 	QCoreApplication::setOrganizationName("Josiah Bryan");
 	QCoreApplication::setApplicationName("securitycam-muxer");
