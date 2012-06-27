@@ -205,7 +205,7 @@ void MjpegClient::processBlock()
 					block.remove(0,headerLength);
 					
 					// Block should now be just data
-					qDebug() << "processBlock(): block length:"<<block.length()<<", headerLength:"<<headerLength<<", header:"<<header;
+					//qDebug() << "processBlock(): block length:"<<block.length()<<", headerLength:"<<headerLength<<", header:"<<header;
 					
 					if(block.length() > 0)
 					{
@@ -217,7 +217,7 @@ void MjpegClient::processBlock()
 						
 						if(!frame.isNull())
 						{
- 							qDebug() << "processBlock(): New image received, original size:"<<frame.size()<<", bytes:"<<block.length();
+ 							//qDebug() << "processBlock(): New image received, original size:"<<frame.size()<<", bytes:"<<block.length();
 							
 							if(m_autoResize.width()>0 && m_autoResize.height()>0 && 
 							   m_autoResize != frame.size())

@@ -235,10 +235,11 @@ MainWindow::~MainWindow()
 
 void MainWindow::applySize(int x, int y)
 {
+	qDebug() << "applySize: "<<x<<"x"<<y;
 	int xpx = x * m_frameSize.width();
 	int ypx = y * m_frameSize.height();
-	m_rows = x;
-	m_cols = y;
+	m_rows = y;
+	m_cols = x;
 	resize(xpx,ypx);
 }
 

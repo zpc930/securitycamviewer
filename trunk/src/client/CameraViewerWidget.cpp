@@ -117,6 +117,22 @@ void CameraViewerWidget::paintEvent(QPaintEvent */*event*/)
 	if(!m_currentImage.isNull())
 	{
 		painter.drawImage(rect(),m_currentImage);
+		
+		painter.setPen(Qt::black);
+ 		painter.drawText(6,16,QString("%1:%2").arg(m_client->host()).arg(m_client->port()));
+ 		
+ 		painter.setPen(Qt::black);
+ 		painter.drawText(4,16,QString("%1:%2").arg(m_client->host()).arg(m_client->port()));
+ 		
+ 		painter.setPen(Qt::black);
+ 		painter.drawText(6,14,QString("%1:%2").arg(m_client->host()).arg(m_client->port()));
+ 		
+ 		painter.setPen(Qt::black);
+ 		painter.drawText(4,14,QString("%1:%2").arg(m_client->host()).arg(m_client->port()));
+ 		
+ 		painter.setPen(Qt::white);
+ 		painter.drawText(5,15,QString("%1:%2").arg(m_client->host()).arg(m_client->port()));
+ 		
 	}
 	else
 	{
