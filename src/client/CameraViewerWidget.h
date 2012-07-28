@@ -30,8 +30,8 @@ public:
 public slots:
 	void setDesiredSize(QSize);
 	
-	MjpegClient * connectTo(QString host, int port=80, QString path="/", const QString& user="", const QString& pass="");
-	
+	MjpegClient * connectTo(QString host, int port=80, QString path="/", const QString& user="", const QString& pass="", int pollRate=0);
+
  	void setPlaybackEnabled(bool flag) {  m_playbackEnabled = flag; }
  	void setDailyRecordingPath(const QString& path) { m_dailyRecordingPath = path; }
  	void setPlaybackFps(double d) { m_playbackFps = d; }

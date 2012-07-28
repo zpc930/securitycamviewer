@@ -89,7 +89,7 @@ QSize CameraViewerWidget::sizeHint() const
 	return m_desiredSize;
 }
 	
-MjpegClient * CameraViewerWidget::connectTo(QString host, int port, QString path, const QString& user, const QString& pass)
+MjpegClient * CameraViewerWidget::connectTo(QString host, int port, QString path, const QString& user, const QString& pass, int pollRate)
 {
 	if(m_client)
 	{
@@ -99,6 +99,11 @@ MjpegClient * CameraViewerWidget::connectTo(QString host, int port, QString path
 	}
 	
 	m_client = new MjpegClient();
+	if(pollRate > 0 && pollRate <= 30)
+	{
+		m_client->setPollingFps(pollRate); // must set fps before setting mode
+		m_client->setPollingMode(true);
+	}
 	m_client->connectTo(host,port,path,user,pass);
 	m_client->setAutoResize(rect().size());
 	// TODO catch resize event and update autoresize accordingly
