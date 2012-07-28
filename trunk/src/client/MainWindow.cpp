@@ -163,6 +163,8 @@ MainWindow::MainWindow(QString configFile, bool verbose, QWidget *parent)
 		
 		QString user = settings.value(QString("%1/user").arg(group),"").toString();
 		QString pass = settings.value(QString("%1/pass").arg(group),"").toString();
+
+		int pollRate = settings.value(QString("%1/poll").arg(group), "0").toInt();
 		
 		CameraViewerWidget * viewer = new CameraViewerWidget(this);
 		
@@ -207,7 +209,7 @@ MainWindow::MainWindow(QString configFile, bool verbose, QWidget *parent)
 		
 		
 		
-		viewer->connectTo(host,port,path,user,pass);
+		viewer->connectTo(host,port,path,user,pass,pollRate);
 		viewer->setDesiredSize(m_frameSize);
 		viewer->setLiveFps(fps);
 		
