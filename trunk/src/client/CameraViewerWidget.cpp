@@ -20,6 +20,7 @@ CameraViewerWidget::CameraViewerWidget(QWidget *parent)
 	, m_dailyRecordingPath("")
 	, m_playbackFps(2)
 	, m_liveFps(2)
+	, m_flipImage(false)
 	#ifdef OPENCV_ENABLED
 	, m_counter(0)
 	, m_logFilePtr(0)
@@ -77,6 +78,13 @@ void CameraViewerWidget::setLiveFps(double fps)
 	m_updateTimer.start();
 }
 
+void CameraViewerWidget::setFlipImage(bool flip)
+{
+	if(m_client)
+		m_client->setFlipImage(flip);
+	m_flipImage = flip;
+}
+
 void CameraViewerWidget::setDesiredSize(QSize size)
 {
 	if(m_client)
@@ -106,6 +114,7 @@ MjpegClient * CameraViewerWidget::connectTo(QString host, int port, QString path
 	}
 	m_client->connectTo(host,port,path,user,pass);
 	m_client->setAutoResize(rect().size());
+	m_client->setFlipImage(m_flipImage);
 	// TODO catch resize event and update autoresize accordingly
 	m_client->start();
 	

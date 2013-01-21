@@ -217,7 +217,7 @@ void PlaybackWidget::loadPlaybackDate(const QString & date)
 	if(m_files.size() <= 0)
 	{
 		setStatus(Paused);
-		QMessageBox::critical(this,tr("No Video Found"),QString(tr("Sorry, no video was found for %1.")).arg(date));
+		QMessageBox::critical(this,tr("No Video Found"),QString(tr("Sorry, no video was found for %1.\nHint: Check to make sure there are files in this exact path:\n%2")).arg(date).arg(path));
 		return;
 	}
 	
