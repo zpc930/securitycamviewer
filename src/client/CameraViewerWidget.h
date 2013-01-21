@@ -25,7 +25,7 @@ public:
 	
 	double liveFps() { return m_liveFps; }
 
-	
+	bool flipImage() { return m_flipImage; }
 	
 public slots:
 	void setDesiredSize(QSize);
@@ -36,6 +36,7 @@ public slots:
  	void setDailyRecordingPath(const QString& path) { m_dailyRecordingPath = path; }
  	void setPlaybackFps(double d) { m_playbackFps = d; }
 	void setLiveFps(double);
+	void setFlipImage(bool flag=true);
 	
 	void enableEyeDetection(bool highlightEyes=true, QString logFile="eye-counting.csv");
 	
@@ -60,6 +61,8 @@ private:
  	double m_playbackFps;
 	
 	double m_liveFps;
+
+	bool m_flipImage;
 	
 	#ifdef OPENCV_ENABLED
 	EyeCounter *m_counter;

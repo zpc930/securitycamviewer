@@ -91,30 +91,39 @@ MainWindow::MainWindow(QString configFile, bool verbose, QWidget *parent)
 		
 	
 	// Attempt to find an optimum window size to view the cameras in a nice symetric arragmenet
-	double sq = sqrt(numCameras);
-	
-	if(((int)sq) != sq)
+	int rows = settings.value("rows",-1).toInt();
+	int cols = settings.value("cols",-1).toInt();
+	if(cols < 1 || rows < 1)
 	{
-		// first, attempt to round up
-		int x = (int)ceil(sq);
-		int y = (int)floor(sq);
-		
-		if(x*y >= numCameras)
-			// good to go, apply size
-			applySize(x,y);
-		else
+		double sq = sqrt(numCameras);
+
+		if(((int)sq) != sq)
 		{
-			// add one row then try
-			y++;
+			// first, attempt to round up
+			int x = (int)ceil(sq);
+			int y = (int)floor(sq);
+
 			if(x*y >= numCameras)
+				// good to go, apply size
 				applySize(x,y);
 			else
-				// just use the sqrt ceil
-				applySize(x,x);
+			{
+				// add one row then try
+				y++;
+				if(x*y >= numCameras)
+					applySize(x,y);
+				else
+					// just use the sqrt ceil
+					applySize(x,x);
+			}
 		}
+		else
+			applySize((int)sq,(int)sq);
 	}
 	else
-		applySize((int)sq,(int)sq);
+	{
+		applySize(cols, rows);
+	}
 	
 	int row=0;
 	int col=0;
@@ -165,6 +174,8 @@ MainWindow::MainWindow(QString configFile, bool verbose, QWidget *parent)
 		QString pass = settings.value(QString("%1/pass").arg(group),"").toString();
 
 		int pollRate = settings.value(QString("%1/poll").arg(group), "0").toInt();
+
+		bool flip    = settings.value(QString("%1/flip").arg(group), "0").toInt() == 1;
 		
 		CameraViewerWidget * viewer = new CameraViewerWidget(this);
 		
@@ -212,6 +223,7 @@ MainWindow::MainWindow(QString configFile, bool verbose, QWidget *parent)
 		viewer->connectTo(host,port,path,user,pass,pollRate);
 		viewer->setDesiredSize(m_frameSize);
 		viewer->setLiveFps(fps);
+		viewer->setFlipImage(flip);
 		
 		layout->addWidget(viewer,row,col);
 		
