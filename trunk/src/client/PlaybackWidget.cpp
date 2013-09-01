@@ -117,7 +117,14 @@ void PlaybackWidget::setCurrentFrame(int d)
 	{
 		m_desiredSize = m_currentImage.size();
 		resize(m_desiredSize);
-	}	
+	}
+
+
+	if(m_currentImage.size() != rect().size())
+	{
+		m_currentImage = m_currentImage.scaled(rect().size(), Qt::KeepAspectRatio);
+	}
+
 	
 	#ifdef OPENCV_ENABLED
 	if(m_counter)

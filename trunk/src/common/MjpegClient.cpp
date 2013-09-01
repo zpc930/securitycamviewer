@@ -150,7 +150,7 @@ void MjpegClient::processBlock()
 			int boundaryStartIdx = m_dataBlock.indexOf(boundaryMarker,ctypeIdx);
 			if(boundaryStartIdx < 0)
 			{
-				qDebug() << "Error: Can't find boundary index after the first content-type index in data block, exiting:"<<m_dataBlock;
+				//qDebug() << "Error: Can't find boundary index after the first content-type index in data block, exiting:"<<m_dataBlock;
 				exit();
 				return;
 			}
@@ -302,7 +302,7 @@ void MjpegClient::handleNetworkData(QNetworkReply *networkReply)
 		QImage frame = QImage::fromData(networkReply->readAll());
 		if(m_flipImage)
 			frame = frame.mirrored(true,true);
-		
+
 		if(!frame.isNull())
 		{
 			//qDebug() << "MjpegClient::handleNetworkData(): New image received, original size:"<<frame.size()<<", bytes:"<<block.length();
@@ -319,7 +319,7 @@ void MjpegClient::handleNetworkData(QNetworkReply *networkReply)
 		if(m_pollMode)
 		{
 			int ms = 1000 / m_pollFps;
-			qDebug() << "MjpegClient::handleNetworkData(): Time till next request:"<<ms<<"ms";
+			//qDebug() << "MjpegClient::handleNetworkData(): Time till next request:"<<ms<<"ms";
 			QTimer::singleShot(ms, this, SLOT(pollServer()));
 		}
 		
