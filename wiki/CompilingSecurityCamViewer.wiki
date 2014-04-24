@@ -3,7 +3,7 @@
 
 = Introduction =
 
-This is a basic guide on compiling DViz using Qt's SDK.
+This is a basic guide on compiling SecurityCamViewer using Qt's SDK.
 
 = What to Build =
 
@@ -34,7 +34,7 @@ You'll probably want to build the .pro file in the 'client' folder if you're jus
   * Then, just cd to the 'client' directory where you stored the source and run './client'
   * To configure the viewer, edit the 'viewer.ini' file in the 'client' directory
 
-= Windows: Running 'client' outside Qt Creator
+= Windows: Running 'client' outside Qt Creator =
 
   * On windows, To run the SecurityCamViewer client outside Qt Creator, you'll need to copy the relevant DLLs from c:\qt\...\qt\bin. The '...' depends on the version of Qt you installed.
   * You'll need mingw10.dll, QtCore4.dll, QtGui4.dll, QtNetwork4.dll, QtOpenGL4.dll, QtScript4.dll, QtSql4.dll, QtSvg4.dll, QtXml4.dll, and QtXmlPatterns4.dll
